@@ -1,0 +1,81 @@
+# ☁️ AWS CLOUD SECURITY FUNDAMENTALS
+## The Shared Responsibility Model & Real-World Misconfigurations
+*Build, secure, and scale applications in the cloud safely — Anytime, Anywhere.*
+
+> **"AWS secures the cloud platform and services, while what you build on top is your responsibility to secure."**
+
+---
+
+## 🏛️ SHARED RESPONSIBILITY MODEL OVERVIEW
+
+### 1. Cloud Delivery Service Models
+* **Infrastructure as a Service (IaaS)**: Provides virtualized computing assets over the internet (e.g., Amazon EC2, Microsoft Azure, Google Cloud), eliminating hardware upkeep and electrical disruptions.
+* **Platform as a Service (PaaS)**: Offers an environment optimized for web app development and deployment so engineers can focus strictly on code (e.g., Heroku, Vercel, TryHackMe cloud rooms).
+* **Software as a Service (SaaS)**: Delivers a fully completed end product ready for immediate use without local installations (e.g., Slack, Zoom, Gmail, Dropbox).
+* **Function as a Service (FaaS)**: Serverless architecture where developers deploy individual code functions that execute in response to events (e.g., AWS Lambda).
+
+### 2. Responsibility Matrix: Layers & Control Areas
+
+| Layer / Control Area | IaaS (EC2) | PaaS (RDS/ECS) | FaaS (Lambda) | SaaS (Connect / WorkMail) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Physical facilities** | 🟧 | 🟧 | 🟧 | 🟧 |
+| **Hardware / core network** | 🟧 | 🟧 | 🟧 | 🟧 |
+| **Hypervisor** | 🟧 | 🟧 | 🟧 | 🟧 |
+| **OS patching / hardening** | 🟦 (mostly) | 🟧 | 🟧 | 🟧 |
+| **Runtime / middleware** | 🟦 | 🟦 | 🟧 | 🟧 |
+| **Application code** | 🟦 | 🟦 | 🟦 *(config + usage)* | 🟧 |
+| **Identity and access (IAM)** | 🟦 | 🟦 | 🟦 | 🟦 |
+| **Data classification & access** | 🟦 | 🟦 | 🟦 | 🟦 |
+| **Encryption choices** | 🟦 | 🟦 | 🟦 | 🟦 |
+| **Network exposure** | 🟦 | 🟦 *(service-specific)* | 🟦 *(service-specific)* | 🟦 *(tenant config)* |
+| **Logging / monitoring config** | 🟦 | 🟦 | 🟦 | 🟦 |
+
+*(Legend: 🟧 Cloud Provider Responsibility, 🟦 Customer Responsibility)*
+
+### 3. Core AWS Services Breakdown
+* **EC2**: You manage OS patches, service hardening, Security Groups, IAM roles, and app security.
+* **RDS**: AWS handles DB engine patching, but you control database access, encryption, parameter groups, and public exposure.
+* **Lambda**: AWS manages the runtime and infrastructure; you secure the **code**, permissions, secrets, and logging.
+* **S3**: AWS secures the physical infrastructure; you secure bucket policies, access controls, encryption, public access blocks, and data lifecycles.
+
+---
+
+## 🚨 REAL-WORLD SECURITY INCIDENTS & PATTERNS
+
+### Capital One: Cloud Misuse Pattern (SSRF)
+* **Root Cause**: An attacker exploited a Server-Side Request Forgery (SSRF) vulnerability in a public app layer to query the EC2 instance metadata service, stealing temporary IAM credentials to access unauthorized S3 data.
+* **Remediation**: 
+  * Enforce **least privilege** for all IAM roles and policies.
+  * Reduce metadata exposure and harden instance credential access patterns.
+  * Implement centralized logging via CloudTrail and alert on unusual STS/S3 behaviors.
+
+### Uber: Exposed Credentials
+* **Root Cause**: Attackers gained access to an engineer's GitHub account (via password reuse) where AWS access keys were hardcoded, allowing direct download of sensitive files from Amazon S3.
+* **Remediation**: 
+  * **Never store secrets in code**; use **Secrets Manager** or SSM Parameter Store.
+  * Rotate keys regularly, use short-lived STS credentials, and enforce MFA.
+  * Scan code repositories for leaked secrets and monitor for impossible travel logins.
+
+### "It Was Just a Bucket" (Pegasus Airlines Pattern)
+* **Root Cause**: Teams relaxed S3 access controls for speed during testing and never re-tightened them, leading to a public data leak due to missing account-level safety nets and misconfigured bucket policies.
+* **Remediation**: 
+  * Turn on **S3 Block Public Access** (at both account and bucket levels).
+  * Use preventive policy-as-guardrails and continuous configuration monitoring.
+
+---
+
+## 🏁 RECAP & CONCLUSION
+
+### Summary Questions & Answers
+* **Q: Name one area that is your responsibility to secure in the case of a Lambda function?**
+  * **A:** `code`
+* **Q: In relation to the Capital One incident, and in general, what IAM best practice should you always apply?**
+  * **A:** `least privilege`
+* **Q: Instead of storing secrets in code, what AWS service should you use?**
+  * **A:** `Secrets Manager`
+* **Q: What is a common misconfiguration often referred to as "Leaky bucket"?**
+  * **A:** `S3 Public Access`
+* **Q: What is the flag revealed at the end of the game?**
+  * **A:** `THM{SHARED_RESPONSIBILITY_MASTER}`
+
+> 💡 **Core Takeaway**: Most high-impact cloud breaches are caused by over-permissive IAM policies, public exposure, leaked secrets, and lack of monitoring. *Understand the fundamentals first, and security follows naturally!*

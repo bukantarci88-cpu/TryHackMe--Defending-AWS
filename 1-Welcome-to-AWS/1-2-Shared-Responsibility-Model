@@ -6,250 +6,105 @@
 
 ---
 
-# Overview
+## Overview
 
 This room introduces the **AWS Shared Responsibility Model** and explains how security responsibilities are divided between AWS and its customers.
 
-AWS is responsible for securing the underlying cloud infrastructure, while customers are responsible for securing the services, identities, applications, and data they configure and deploy in the cloud. The exact division of responsibility depends on the cloud service model being used.
+AWS is responsible for securing the underlying cloud infrastructure (**Security OF the Cloud**), while customers are responsible for securing the services, identities, applications, and data they configure and deploy (**Security IN the Cloud**). The exact division of responsibility depends on the cloud service model being used.
 
-The room also examines real-world cloud security incidents to demonstrate how exposed credentials, overly permissive IAM policies, and misconfigured storage can lead to data exposure.
+The room also examines real-world cloud security incidents to demonstrate how exposed credentials, overly permissive IAM policies, and misconfigured storage can lead to severe data exposure.
 
 ---
 
-# Task 1 - Introduction
+## Task 1 - Introduction
 
 AWS secures the cloud platform and services to a certain extent, while customers are responsible for securing what they build and configure on top of it.
 
-**Key takeaway:** Security in the cloud is a shared responsibility. Using AWS does not automatically make applications, identities, or data secure.
+> 💡 **Key Takeaway:** Security in the cloud is a shared responsibility. Using AWS does not automatically make applications, identities, or data secure.
 
 ---
 
-# Task 2 - Shared Responsibility Model Overview
+## Task 2 - Shared Responsibility Model Overview
 
 The Shared Responsibility Model divides security responsibilities between the cloud provider and the customer. The customer’s responsibilities vary depending on the cloud service model.
 
-## Infrastructure as a Service (IaaS)
+### Infrastructure as a Service (IaaS)
 
 Operating an in-house data center or server facility requires responsibility for physical protection, hardware reliability, system patching, network configuration, and many other tasks.
 
 **Infrastructure as a Service (IaaS)** provides virtualized computing resources over the internet. Organizations can provision virtual servers through a web console without managing the physical hardware or data center.
 
-Examples include Amazon Web Services (AWS), Microsoft Azure, and Google Cloud. With IaaS, the provider manages the physical infrastructure, while the customer typically manages the operating system, network configuration, identity permissions, applications, and data.
+* **Examples:** Amazon Web Services (AWS EC2), Microsoft Azure, Google Cloud (GCP).
+* **Responsibility Split:** The provider manages physical infrastructure and virtual hypervisors, while the customer manages the operating system, network configurations, identity permissions, applications, and data.
 
-## Platform as a Service (PaaS)
+### Platform as a Service (PaaS)
 
 **Platform as a Service (PaaS)** provides an environment for developing and deploying applications without requiring developers to manage the underlying servers directly.
 
-Developers can focus on writing code and deploying applications, while the platform manages more of the hosting environment. Examples include Heroku, Vercel, and Google App Engine.
+Developers can focus on writing code and deploying applications, while the platform manages the hosting environment and server maintenance.
+* **Examples:** Heroku, Vercel, Google App Engine, AWS Elastic Beanstalk.
+* **Context:** TryHackMe's cloud functionality illustrates PaaS principles by providing users with a simplified way to build and publish interactive rooms while relying on AWS IaaS underneath.
 
-TryHackMe's cloud functionality illustrates how a platform can provide users with a simplified way to build and publish interactive rooms while relying on cloud infrastructure underneath.
+### Software as a Service (SaaS)
 
-## Software as a Service (SaaS)
+**Software as a Service (SaaS)** delivers cloud-hosted applications that users can access directly without installing or maintaining the underlying software or infrastructure.
 
-**Software as a Service (SaaS)** delivers cloud-hosted applications that users can access without installing or maintaining the underlying application infrastructure themselves.
+* **Examples:** Slack, Zoom, Gmail, Google Docs, Dropbox, Amazon WorkMail.
+* **Responsibility Split:** The provider manages the entire application stack, while customers remain responsible for appropriate account access, identity controls, data classification, and tenant-level configurations.
 
-Examples include Slack, Zoom, Gmail, Google Docs, and Dropbox. The provider manages most of the application stack, while customers remain responsible for appropriate account access, data handling, and configuration choices available to them.
+### Function as a Service (FaaS)
 
-## Function as a Service (FaaS)
+**Function as a Service (FaaS)**, commonly associated with serverless computing, allows developers to deploy individual functions or pieces of code that run in response to specific events (e.g., HTTP requests, file uploads, database updates).
 
-**Function as a Service (FaaS)**, commonly associated with serverless computing, allows developers to deploy individual functions or pieces of code that run in response to events, such as HTTP requests, file uploads, or database updates.
+* **Examples:** AWS Lambda, Google Cloud Functions.
+* **Responsibility Split:** AWS manages the underlying infrastructure, operating systems, and execution runtime; the customer remains responsible for function code, permissions, secrets management, and logging configurations.
 
-For example, AWS Lambda manages the underlying infrastructure and execution environment, while the customer remains responsible for the function's code, permissions, secrets, and logging configuration.
+---
 
-## Responsibility by Service Model
+### Responsibility Matrix by Service Model
 
-The following table summarizes the general responsibility split described in the exercise. Exact responsibilities can vary by service and configuration.
+The following table summarizes the general responsibility split across various cloud service models:
 
 | Layer / Control Area | IaaS (EC2) | PaaS (RDS/ECS) | FaaS (Lambda) | SaaS |
-|---|---|---|---|---|
-| Physical facilities | AWS | AWS | AWS | AWS |
-| Hardware / core network | AWS | AWS | AWS | AWS |
-| Hypervisor | AWS | AWS | AWS | AWS |
-| OS patching / hardening | Customer | Mostly AWS / service-specific | AWS | AWS |
-| Runtime / middleware | Customer | Service-specific | AWS | AWS |
-| Application code | Customer | Customer | Customer | Provider-managed; customer configuration and use still matter |
-| Identity and access (IAM) | Customer | Customer | Customer | Customer account and access configuration |
-| Data classification and access control | Customer | Customer | Customer | Customer |
-| Encryption choices and settings | Customer-configured | Service-specific | Customer-configured | Service-specific |
-| Network exposure | Customer-configured | Service-specific | Service-specific | Tenant configuration where available |
-| Logging / monitoring configuration | Customer | Customer / service-specific | Customer | Customer / service-specific |
+|---|:---:|:---:|:---:|:---:|
+| **Physical facilities** | AWS | AWS | AWS | AWS |
+| **Hardware / core network** | AWS | AWS | AWS | AWS |
+| **Hypervisor** | AWS | AWS | AWS | AWS |
+| **OS patching / hardening** | Customer | Mostly AWS | AWS | AWS |
+| **Runtime / middleware** | Customer | Service-specific | AWS | AWS |
+| **Application code** | Customer | Customer | Customer | Provider-managed *(Config matters)* |
+| **Identity and access (IAM)** | Customer | Customer | Customer | Customer |
+| **Data classification & access control** | Customer | Customer | Customer | Customer |
+| **Encryption choices & settings** | Customer | Service-specific | Customer | Service-specific |
+| **Network exposure** | Customer | Service-specific | Service-specific | Tenant Config |
+| **Logging / monitoring configuration** | Customer | Customer / Service-specific | Customer | Customer / Service-specific |
 
-## AWS Service Examples
+---
+
+### AWS Service Examples Breakdown
 
 - **EC2:** The customer patches and hardens the operating system, configures Security Groups, manages IAM roles, and secures applications.
-- **RDS:** AWS manages much of the underlying infrastructure and database engine maintenance, depending on the service configuration. Customers still manage database access, encryption choices, parameter settings, and network exposure.
+- **RDS:** AWS manages the underlying infrastructure and database engine maintenance. Customers manage database access, encryption choices, parameter settings, and network exposure.
 - **Lambda:** AWS manages the infrastructure and execution environment; customers secure function code, permissions, secrets, and logging.
-- **S3:** AWS secures the underlying infrastructure; customers configure bucket policies and access controls, public-access settings, encryption, and data lifecycle controls.
+- **S3:** AWS secures the underlying infrastructure; customers configure bucket policies, access control lists (ACLs), public-access settings, encryption, and data lifecycle controls.
 
-### Question
-
-**Name one area that is your responsibility to secure in the case of a Lambda function.**
-
-**Answer:** `code`
+> **Question:** Name one area that is your responsibility to secure in the case of a Lambda function.  
+> **Answer:** `code`
 
 ---
 
-# Task 3 - Real-World Example: Capital One - Cloud Misuse Pattern
+## Task 3 - Real-World Example: Capital One - Cloud Misuse Pattern
 
-## Incident Summary
+### Incident Summary
+A major breach occurred after an attacker accessed data stored in cloud storage by abusing a web-facing misconfiguration to steal temporary credentials.
 
-A major breach occurred after an attacker accessed data stored in cloud storage by abusing a web-facing misconfiguration and obtaining credentials.
+### Root Cause
+The attacker exploited a Server-Side Request Forgery (**SSRF**) vulnerability in a publicly reachable component (a misconfigured Web Application Firewall/app layer) to force the application to make requests to the EC2 Instance Metadata Service (IMDS).
 
-## Root Cause
+The metadata endpoint returned temporary IAM role credentials. The attacker used these credentials via AWS APIs to access sensitive data stored in S3 buckets that the role was overly permitted to reach.
 
-The attacker exploited a server-side request forgery (**SSRF**) vulnerability in a publicly reachable component, commonly described in incident reporting as a misconfigured web application or WAF layer. This allowed requests to be made to the EC2 instance metadata service.
+> ⚠️ **Takeaway:** This demonstrates a shared-responsibility failure: AWS operated the cloud infrastructure correctly, but customer-side application vulnerabilities and excessive IAM permissions created a path from an internet-facing app to credential theft and data exfiltration.
 
-The metadata endpoint can provide temporary IAM role credentials. After obtaining these credentials, the attacker used AWS APIs to access data in S3 that the role was permitted to reach.
-
-The incident demonstrates a shared-responsibility failure: AWS operated the cloud platform, but customer-side configuration and identity permissions created a path from an internet-facing application to credential theft and data access.
-
-## Remediation
-
-- **Enforce least privilege:** Grant IAM roles and policies only the permissions required.
-- **Reduce metadata credential exposure:** Harden instance credential access patterns and protect metadata service access.
-- **Improve detection:**
-  - Enable CloudTrail logging and centralize logs.
-  - Alert on unusual STS activity and suspicious S3 access patterns.
-- **Apply preventive guardrails:**
-  - Use Service Control Policies (SCPs), permission boundaries, and configuration rules to restrict risky configurations.
-
-### Question
-
-**In relation to this incident, and in general, what IAM best practice should you always apply?**
-
-**Answer:** `least privilege`
-
----
-
-# Task 4 - Real-World Example: Uber - Exposed Credentials
-
-## Incident Summary
-
-Credentials were publicly exposed and used to access cloud resources, leading to the exposure of sensitive data.
-
-## Root Cause
-
-In Uber's 2016 breach, the attacker gained access to an engineer's GitHub account, reportedly through password reuse involving previously leaked credentials. The attacker found AWS access keys stored in code and used those keys to access and download files from Uber's Amazon S3 datastore.
-
-Once valid cloud credentials were obtained, identity effectively became the perimeter. The incident highlights weaknesses in secrets management, access-key hygiene, least-privilege IAM, and monitoring.
-
-## Remediation
-
-- **Keep secrets out of code:** Use AWS Secrets Manager or AWS Systems Manager Parameter Store to manage secrets.
-- **Rotate credentials:** Prefer short-lived credentials and IAM roles where appropriate.
-- **Detect leaked secrets:** Use repository scanning and alerts.
-- **Require MFA:** Protect sensitive accounts and actions with multi-factor authentication.
-- **Monitor activity:** Alert on anomalous API calls, unusual privilege escalation, and sign-ins from geographically implausible locations within a short period.
-
-### Question
-
-**Instead of storing secrets in code, what AWS service should you use?**
-
-**Answer:** `Secrets Manager`
-
----
-
-# Task 5 - Real-World Example: "It Was Just a Bucket"
-
-## Incident Summary
-
-A large dataset became publicly accessible because of storage access misconfiguration.
-
-## Root Cause
-
-Teams may treat object storage as a convenient place to store files and temporarily relax access controls for testing, integrations, or sharing. If those controls are not restored, an S3 bucket policy or access control list (ACL) may allow public or overly broad access.
-
-The Pegasus Airlines exposure is an example described in reporting of a misconfigured AWS S3 bucket that left a large volume of airline data exposed online.
-
-The broader security failure is not necessarily one setting alone. It can also reflect missing preventive controls, inadequate detection, and a lack of monitoring for changes that make a bucket public.
-
-## Remediation
-
-- **Enable S3 Block Public Access:** Apply it at both the account and bucket levels where appropriate.
-- **Use preventive controls:**
-  - Create policy guardrails that deny public access unless explicitly approved.
-  - Use configuration rules to detect publicly accessible buckets.
-- **Use detective controls:**
-  - Alert on bucket policy and access-control changes.
-  - Continuously monitor for public exposure.
-
-### Question
-
-**What is a common misconfiguration often referred to as "Leaky bucket"?**
-
-**Answer:** `S3 Public Access`
-
----
-
-# Task 6 - Recap Exercise
-
-### Question
-
-**What is the flag revealed at the end of the game?**
-
-**Answer:**
-
-```text
-THM{SHARED_RESPONSIBILITY_MASTER}
-```
-
----
-
-# Task 7 - Conclusion
-
-Many high-impact cloud incidents involve recurring security weaknesses, including:
-
-- **Over-permissive IAM policies** that allow compromised identities to access more resources than necessary.
-- **Public exposure** through S3 buckets, Security Groups, and endpoints.
-- **Leaked secrets** such as access keys stored in source code.
-- **Insufficient logging and alerting** that delays detection of suspicious activity.
-
-The central lesson is that cloud security requires both provider-side infrastructure protection and customer-side security configuration. Strong IAM controls, protected secrets, restricted data access, and effective monitoring help reduce the likelihood and impact of cloud incidents.
-
----
-
-# Practical Security Checklist
-
-- [ ] Apply least privilege to IAM users, roles, and policies.
-- [ ] Avoid storing access keys or secrets in source code.
-- [ ] Prefer IAM roles and short-lived credentials where appropriate.
-- [ ] Enable MFA for sensitive accounts and actions.
-- [ ] Enable S3 Block Public Access and review bucket policies.
-- [ ] Monitor changes to IAM permissions and S3 access settings.
-- [ ] Enable and centralize CloudTrail logs.
-- [ ] Alert on unusual STS activity and unexpected data access.
-- [ ] Review public endpoints and network exposure regularly.
-
----
-
-# Lessons Learned
-
-The AWS Shared Responsibility Model clarifies that cloud providers secure the underlying infrastructure, while customers must protect their identities, applications, configurations, and data. Real-world incidents demonstrate how SSRF, exposed credentials, excessive IAM permissions, and public S3 access can turn a configuration weakness into a major data breach. Applying least privilege, protecting secrets, blocking unintended public access, and monitoring cloud activity are essential practices for reducing cloud security risk.
-
----
-
-# Skills and Technologies
-
-**Cloud Platform:** Amazon Web Services (AWS)  
-**Cloud Security Concepts:** Shared Responsibility Model, least privilege, cloud misconfiguration  
-**Identity and Access:** AWS IAM, IAM roles and policies, STS  
-**Cloud Services:** EC2, Lambda, S3, Secrets Manager, Systems Manager Parameter Store  
-**Detection and Monitoring:** CloudTrail, STS activity monitoring, S3 access monitoring  
-**Security Topics:** SSRF, credential exposure, public storage access, security guardrails
-
----
-
-# Challenge Answers
-
-| Question | Answer |
-|---|---|
-| Name one area that is your responsibility to secure in the case of a Lambda function. | `code` |
-| What IAM best practice should you always apply? | `least privilege` |
-| Instead of storing secrets in code, what AWS service should you use? | `Secrets Manager` |
-| What is a common misconfiguration often referred to as "Leaky bucket"? | `S3 Public Access` |
-| What is the flag revealed at the end of the game? | `THM{SHARED_RESPONSIBILITY_MASTER}` |
-
----
-
-**Learning Platform:** [TryHackMe](https://tryhackme.com/)  
-**Focus:** AWS shared responsibility, IAM security, credential protection, and cloud misconfiguration prevention.
+### Remediation
+- **Enforce Least Privilege:** Grant IAM roles and policies only the minimal permissions necessary.
+- **Harden Instance Metadata:** Upgrade to IMDSv2 (

@@ -174,10 +174,6 @@ and **Network Access Control Lists (NACLs)**.
                           are evaluated together  ascending rule-number
                                                   order
 
-  Default behavior        Default security group  Default NACL allows
-                          blocks unsolicited      inbound and outbound
-                          inbound traffic         traffic; custom NACLs
-                                                  have their own rules
   -----------------------------------------------------------------------
 
 **Stateful** means response traffic for an allowed connection is

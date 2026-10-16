@@ -390,25 +390,23 @@ help maintain the desired capacity.
   Which service runs code without you AWS Lambda
   provisioning the infrastructure?    
 
-  What is the name of the lab         `room15-web`
+  What is the name of the lab         room15-web
   instance?                           
 
-  What flag was found in the instance `THM{NO_PASSWORDS_HERE}`
+  What flag was found in the instance THM{NO_PASSWORDS_HERE}
   User Data?                          
 
-  Under which user do User Data       `root`
+  Under which user do User Data       root
   scripts run?                        
 
-  What user appeared when running     `ssm-user`
+  What user appeared when running     ssm-user
   `whoami` in the Session Manager     
   shell?                              
 
-  What IP address is used for EC2     `169.254.169.254`
+  What IP address is used for EC2     169.254.169.254
   instance metadata?                  
 
-  What is the term for building new   Immutable infrastructure
-  AMIs instead of patching individual 
-  instances?                          
+                           
   -----------------------------------------------------------------------
 
 ------------------------------------------------------------------------

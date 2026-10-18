@@ -1,0 +1,267 @@
+# AWS Security Observability — TryHackMe Notes
+
+## Room Overview
+
+This room introduces four AWS security observability services:
+
+- **AWS CloudTrail** — API activity logging
+- **Amazon GuardDuty** — continuous threat detection
+- **Amazon Inspector** — vulnerability and configuration assessment
+- **Amazon Detective** — investigation and visual analytics
+
+Together, these services support visibility, detection, vulnerability management, and incident investigation across an AWS environment.
+
+## Task 1 — Introduction
+
+The room focuses on the four pillars of AWS security observability and how they contribute to cloud security monitoring and incident response.
+
+## Task 2 — AWS CloudTrail
+
+### Purpose
+
+AWS CloudTrail records API activity across an AWS account, including requests made programmatically and through the AWS Management Console. Events can be delivered to an Amazon S3 bucket or Amazon CloudWatch Logs.
+
+CloudTrail data supports security monitoring, incident investigation, and compliance auditing.
+
+### Key points
+
+- A trail is created in one Region, but a multi-Region trail can capture API activity across Regions.
+- Event history is available for 90 days by default. For longer retention, deliver logs to S3 and/or CloudWatch Logs.
+- Log-file validation can help detect changes to delivered log files.
+- The destination S3 bucket policy must allow CloudTrail to write logs.
+
+### Security best practices
+
+- Enable a multi-Region trail.
+- Enable log-file integrity validation.
+- Encrypt logs using server-side encryption, such as SSE-S3 or SSE-KMS.
+- Stream logs to CloudWatch Logs to support alerting.
+- Configure lifecycle rules to archive or expire logs according to retention requirements.
+
+### Console exercise
+
+1. Open the **CloudTrail** dashboard.
+2. Select **Create trail**.
+3. Choose the lab's existing S3 bucket, which begins with `security-lab-cloudtrail-`.
+4. Ensure encryption is enabled and configure a KMS key if required.
+5. Enable **Log file validation**.
+6. Select **Management events** and both **Read** and **Write** API activity.
+7. Review the configuration and create the trail.
+8. Verify that logging starts and that log files are delivered to the S3 bucket.
+
+### AWS CLI exercise
+
+First, identify the lab bucket:
+
+```bash
+aws s3 ls
+```
+
+Create a multi-Region trail with log-file validation enabled. Replace the bucket name with the one assigned to your lab:
+
+```bash
+aws cloudtrail create-trail \
+  --name SecurityLabTrail \
+  --s3-bucket-name "security-lab-cloudtrail-REPLACE-WITH-YOUR-BUCKET" \
+  --is-multi-region-trail \
+  --enable-log-file-validation
+```
+
+Start logging:
+
+```bash
+aws cloudtrail start-logging --name SecurityLabTrail
+```
+
+Check the trail status:
+
+```bash
+aws cloudtrail get-trail-status --name SecurityLabTrail
+```
+
+**Lab note:** If you already created the trail in the Console, the CLI creation command may fail because a trail with that name already exists. Use the existing trail, remove it before recreating it if appropriate for the lab, or reset the environment. Do not use the example bucket name as if it were your own.
+
+### Questions and answers
+
+| Question | Answer |
+|---|---|
+| What is CloudTrail recording? | API activity |
+| What is the name of the other trail visible in the dashboard? | `thm-org-trail` |
+
+## Task 3 — Amazon GuardDuty
+
+### Purpose
+
+Amazon GuardDuty provides continuous threat detection by analyzing sources such as CloudTrail management events, VPC Flow Logs, and DNS query logs. It uses machine learning and threat intelligence to identify potentially suspicious or malicious activity.
+
+Examples include unusual API calls, unauthorized access attempts, and communication with known malicious IP addresses.
+
+### Key points
+
+- GuardDuty detectors are configured per Region.
+- The lab has a detector configured in `us-east-1`.
+- Findings include severity, affected resources, and information about the actor, such as an IP address or IAM identity.
+- GuardDuty may be centrally managed by a delegated administrator at the organization level.
+
+### Security best practices
+
+- Enable GuardDuty in all relevant Regions.
+- Keep threat intelligence features enabled.
+- Review findings regularly.
+- Integrate findings with notification and automation services such as Amazon SNS and Amazon EventBridge.
+- Use GuardDuty findings as input for investigations in Amazon Detective.
+
+### Practical exercise: Generate sample findings
+
+Retrieve the detector ID:
+
+```bash
+DETECTOR_ID=$(aws guardduty list-detectors \
+  --region us-east-1 \
+  --query 'DetectorIds[0]' \
+  --output text)
+
+echo "Detector ID: $DETECTOR_ID"
+```
+
+Create sample findings:
+
+```bash
+aws guardduty create-sample-findings \
+  --detector-id "$DETECTOR_ID" \
+  --region us-east-1 \
+  --finding-types \
+    "Recon:EC2/PortProbeUnprotectedPort" \
+    "UnauthorizedAccess:IAMUser/ConsoleLoginSuccess.B"
+```
+
+Then open **GuardDuty → Findings** and inspect the generated samples. Refresh the page if they do not appear immediately.
+
+**Lab note:** GuardDuty was centrally managed in this environment, so enabling it directly was not available. The room notes that `aws guardduty create-detector --enable --region ...` can be used in an account where the user has the required permissions.
+
+### Questions and answers
+
+| Question | Answer |
+|---|---|
+| Name one event source for GuardDuty. | CloudTrail |
+| Which three severity levels are used for findings in this room? | Low, Medium, High |
+
+## Task 4 — Amazon Inspector
+
+### Purpose
+
+Amazon Inspector performs automated security assessments of supported workloads. The room focuses on identifying known vulnerabilities (CVEs), insecure configurations, and network exposure.
+
+The notes describe scanning support for EC2 instances, ECR container images, Lambda functions, and dependency or secret issues in developer code and CI/CD pipelines.
+
+Inspector findings can include CVE identifiers, severity ratings, risk prioritization, and remediation guidance.
+
+### Security best practices
+
+- Use vulnerability and network-reachability assessment coverage.
+- Run assessments regularly and when new instances are launched.
+- Export findings to S3 or centralize them with AWS Security Hub.
+- Prioritize remediation of Critical and High severity findings.
+
+### Console exercise
+
+1. Open **Amazon Inspector**.
+2. Select **Get started** to enable it, where permitted.
+3. Allow several minutes for resource discovery and findings to populate.
+4. Open **Account coverage** and activate EC2 scanning if needed.
+5. Go to **Findings → By instance** and select the lab EC2 instance.
+6. Review the findings, including the affected ports and network reachability details.
+
+### Questions and answers
+
+| Question | Answer |
+|---|---|
+| Which two ports were found to be vulnerable, in ascending order? | `22, 80` |
+| What type of vulnerability did the two ports have in common? | Network Reachability |
+
+## Task 5 — Amazon Detective
+
+### Purpose
+
+Amazon Detective helps analyze security activity by building visual investigation graphs from sources including GuardDuty findings, CloudTrail events, and VPC Flow Logs.
+
+It presents timelines and relationships between actors, IP addresses, IAM users, and resources to help analysts understand the context and possible scope of an incident.
+
+### Key points
+
+- A behavior graph is created per Region.
+- Detective ingests relevant security data, including GuardDuty and CloudTrail data.
+- A meaningful behavior baseline can take **24–48 hours** to build.
+- Detective is particularly useful when there are GuardDuty findings to explore.
+
+### Security best practices
+
+- Use a behavior graph in the same Region as GuardDuty.
+- Use read-only IAM permissions for analysts who only need to investigate.
+- Consider VPC endpoints to keep supported service traffic within the AWS network.
+- Follow organizational retention and cost policies when managing Detective resources.
+
+### Console exercise
+
+1. Open **Amazon Detective** and select **Get started**, where permitted.
+2. Open **Search**.
+3. Select **EC2 instance** as the entity type, enter `*`, and search.
+4. Select an instance ID to view its profile.
+5. To investigate an IAM identity, retrieve the current identity ARN:
+
+```bash
+aws sts get-caller-identity
+```
+
+6. Open **Investigations** and select **Run investigation**.
+7. Choose the option to specify an AWS role or user by ARN.
+8. Select **AWS user**, enter the ARN returned by the command, and run the investigation.
+9. If the ARN is not found, allow more time for Detective to discover the resource and try again.
+
+**Lab note:** The lab may provide limited investigation results. The exercise demonstrates the workflow rather than guaranteeing a rich set of findings.
+
+### Questions and answers
+
+| Question | Answer |
+|---|---|
+| What other IAM resource type can be selected for an investigation? | AWS Role |
+| What is the minimum time Detective needs to build a meaningful behavior-graph baseline? | 24 hours |
+
+## Task 6 — Conclusion
+
+### Key takeaways
+
+- **CloudTrail** records API activity and provides an audit trail for monitoring, investigations, and compliance.
+- **GuardDuty** detects potentially malicious activity and produces prioritized security findings.
+- **Inspector** identifies software vulnerabilities and network exposure across supported workloads.
+- **Detective** correlates security data and provides visual context for incident investigations.
+
+Together, these services contribute to a defence-in-depth approach to AWS security observability.
+
+### Mini-game flag
+
+```text
+THM{DEFENCE_IN_DEPTH}
+```
+
+## Quick Reference
+
+| Goal | Command |
+|---|---|
+| List S3 buckets | `aws s3 ls` |
+| Create a multi-Region CloudTrail | `aws cloudtrail create-trail ...` |
+| Start CloudTrail logging | `aws cloudtrail start-logging --name SecurityLabTrail` |
+| Check CloudTrail status | `aws cloudtrail get-trail-status --name SecurityLabTrail` |
+| List GuardDuty detector IDs | `aws guardduty list-detectors --region us-east-1` |
+| Create GuardDuty sample findings | `aws guardduty create-sample-findings ...` |
+| Get the current AWS identity and ARN | `aws sts get-caller-identity` |
+
+## Security Lessons
+
+- Centralize and retain cloud audit logs according to policy.
+- Enable integrity validation and encryption for log storage.
+- Monitor GuardDuty findings and route them to the appropriate response workflow.
+- Prioritize vulnerabilities based on severity, exploitability, and network exposure.
+- Use Detective to add context and relationships to security findings.
+- Verify the active account, Region, and IAM permissions before running AWS CLI commands.
+- Replace lab-specific bucket names, ARNs, and IDs with values from your own authorized environment.

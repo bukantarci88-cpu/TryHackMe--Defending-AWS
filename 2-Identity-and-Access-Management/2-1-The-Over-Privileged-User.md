@@ -168,7 +168,8 @@ If this user's credentials are compromised in any way, the attacker would have f
 
 ~ $ aws iam get-user --user-name carl-the-dev
 
-![image.png](AWS%202%201%20The%20Over-Privileged%20User/image.png)
+ <img width="603" height="293" alt="image" src="https://github.com/user-attachments/assets/044f2cc4-4345-44e1-a8ca-9c176ab9d985" />
+
 
 > What is the name of the group the `ci-deployer` user is part of?
 > 
@@ -177,7 +178,8 @@ If this user's credentials are compromised in any way, the attacker would have f
 
 ~ $ aws iam list-groups-for-user --user-name ci-deployer
 
-![image.png](AWS%202%201%20The%20Over-Privileged%20User/image%201.png)
+ <img width="477" height="173" alt="image 1" src="https://github.com/user-attachments/assets/03719848-6711-47cb-884e-c744a918d0a4" />
+
 
 ### Task 4 - Remediation
 

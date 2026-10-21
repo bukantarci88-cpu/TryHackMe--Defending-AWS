@@ -1,176 +1,134 @@
-# TryHackMe - AWS Compute
+# AWS 1.5. Introduction to Cloud Computing
 
-> **Platform:** TryHackMe\
-> **Topic:** AWS Compute\
-> **Category:** AWS \| EC2 \| IAM \| Systems Manager \| Cloud Security\
-> **Focus:** Compute services, EC2 configuration, secure instance
-> access, and immutable infrastructure
+### Task 1 - Introduction
 
-------------------------------------------------------------------------
+Computing is the engine of the cloud. No matter if you run web applications, process data, or deploy security tools, there is always some form of compute service behind it. In this room, you will understand how AWS provides compute services with a focus on EC2.
 
-## Overview
+**Learning Objectives**
 
-AWS compute services provide the processing power needed to run
-applications, process data, and deploy security tools. This room focuses
-on Amazon Elastic Compute Cloud (EC2), the core concepts behind EC2
-instances, methods for connecting to instances, and the **pets versus
-cattle** infrastructure model.
+- Understand main AWS compute services and when to use them
+- Learn EC2 core concepts
+- Connect to EC2 and inspect configurations
+- Understand the "pets vs cattle" concept
 
-## Learning Objectives
+### Task 2 - AWS Compute Services
 
--   Understand the main AWS compute services and their use cases.
--   Learn core EC2 concepts.
--   Connect to EC2 instances and inspect their configurations.
--   Understand the pets-versus-cattle approach to infrastructure.
+AWS offers different levels of compute services, each suited for different use cases.
 
-------------------------------------------------------------------------
+- **Elastic Compute Cloud (EC2)** - your basic virtual machine in the cloud. Full flexibility in choosing the operating system, installed software, network configuration, and patch management.
+- **Elastic Container Service (ECS/EKS)** - you package your applications into container images, and AWS runs them for you.
+- **Serverless (Lambda)** - you provide the code for the function, and AWS handles everything else, like provisioning, scaling, and patching.
 
-## 1. AWS Compute Services
+**Responsibility Spectrum:** Below is a bite-sized overview of the responsibilities.
 
-AWS offers different compute options depending on how much
-infrastructure control is needed.
+| **Service** | **You Manage** | **AWS Manages** |
+| --- | --- | --- |
+| **EC2** | OS, patches, applications, data, and security configuration | Hardware, hypervisor, physical security |
+| **Containers** | Application code, dependencies, task configuration | Host OS (Fargate), orchestrator |
+| **Lambda** | Code, IAM role, triggers | Provisioning, scaling, patching |
 
-  -----------------------------------------------------------------------
-  Service                 Description             Typical use case
-  ----------------------- ----------------------- -----------------------
-  **Amazon EC2**          Virtual machines with   Custom software stacks,
-                          control over the        full OS control, and
-                          operating system,       long-running workloads.
-                          software, networking,   
-                          and patching.           
+**Security Best Practices**
 
-  **Amazon ECS / EKS**    Services for running    Consistent deployments
-                          containerized           packaged as container
-                          applications.           images.
+- Data and access always fall under your responsibility, so make sure you secure those first.
+- Understanding compute requirements is necessary to properly assess which compute service to use and how much you need to secure it.
+- Use EC2s when you need full OS control, a custom software stack, or long-running processes.
+- Use containers when you want consistent deployments across environments and a faster startup than VMs.
+- Use Lambdas when you have event-driven, decoupled, and short-lived tasks.
 
-  **AWS Lambda**          Runs code without       Event-driven,
-                          requiring you to        decoupled, short-lived
-                          provision or manage     tasks.
-                          servers. AWS handles    
-                          provisioning and        
-                          scaling.                
-  -----------------------------------------------------------------------
+**Practical Exercise**
 
-### Shared Responsibility by Compute Type
+1. Log in to the AWS Console with the provided credentials. **Note:** Make sure you are in the right region (`us-east-1`).
+2. Navigate to the EC2 dashboard.
 
-  -----------------------------------------------------------------------
-  Service                 Customer                AWS responsibilities
-                          responsibilities        
-  ----------------------- ----------------------- -----------------------
-  **EC2**                 OS, patches,            Physical hardware,
-                          applications, data, and hypervisor, and
-                          security configuration. physical security.
+![Navigate to EC2 service](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771581241430.png)
 
-  **Containers**          Application code,       For Fargate, the host
-                          dependencies, and task  OS; managed
-                          configuration.          orchestration
-                                                  responsibilities depend
-                                                  on the service
-                                                  selected.
+1. You can see the details of an EC2 by navigating to the EC2 link and then selecting the instance:
+- **Details** - Provides additional information about the EC2 instance (Hostname, VPC, Subnet, Public DNS).
+- **Status and alarms** - Provides instance health information and alerts status.
+- **Monitoring** - Graphs dashboard providing multiple metrics tracking at a glance (CPU, Network).
+- **Security** - Provides details about the Security Groups and opened ports.
+- **Networking** - Network configuration overview (IP Addresses, Hostname and DNS, Network Interfaces, Elastic IP addresses).
+- **Storage** - Storage details and metrics.
+- **Tags** - Instance-associated tags and descriptions.
 
-  **Lambda**              Function code, IAM      Infrastructure
-                          role, and triggers.     provisioning, scaling,
-                                                  and patching of the
-                                                  underlying environment.
-  -----------------------------------------------------------------------
+![Find the EC2 instance details](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771603062694.png)
 
-### Security Notes
+1. Alternatively, you can run the following command from CloudShell or AWS CLI.
 
--   Data and access control remain important customer responsibilities.
--   Choose the compute service based on workload requirements and the
-    level of management you want.
--   Use EC2 when you need full operating-system control or a custom
-    software stack.
--   Use containers for consistent application packaging and deployment.
--   Use Lambda for suitable event-driven workloads where server
-    management is unnecessary.
+```bash
+           $ aws ec2 describe-instances \
+            --filters "Name=instance-state-name,Values=running" \
+            --query "Reservations[*].Instances[*].{ID:InstanceId,Type:InstanceType,Name:Tags[?Key=='Name']|[0].Value,AZ:Placement.AvailabilityZone,PublicIP:PublicIpAddress}" \
+            --output table
 
-### Inspect Running EC2 Instances with AWS CLI
-
-Run this in AWS CloudShell or a configured AWS CLI environment. Confirm
-that the CLI is using the intended region; the lab uses `us-east-1`.
-
-``` bash
-aws ec2 describe-instances \
-  --filters "Name=instance-state-name,Values=running" \
-  --query "Reservations[*].Instances[*].{ID:InstanceId,Type:InstanceType,Name:Tags[?Key=='Name']|[0].Value,AZ:Placement.AvailabilityZone,PublicIP:PublicIpAddress}" \
-  --output table
+----------------------------------------------------------------------------------
+|                                DescribeInstances                               |
++------------+-----------------------+-------------+-----------------+-----------+
+|     AZ     |          ID           |    Name     |    PublicIP     |   Type    |
++------------+-----------------------+-------------+-----------------+-----------+
+|  us-east-1a|  i-0bb9912130618cb20  |  [REDACTED] |  100.53.120.191 |  t2.nano  |
++------------+-----------------------+-------------+-----------------+-----------+
 ```
 
-In the EC2 console, instance details are organized into areas such as:
+**Answer the questions below**
 
--   **Details:** instance identifiers, VPC, subnet, and public DNS.
--   **Status and alarms:** instance health and status checks.
--   **Monitoring:** metrics such as CPU and network activity.
--   **Security:** associated security groups and permitted traffic.
--   **Networking:** IP addresses, DNS, network interfaces, and Elastic
-    IPs.
--   **Storage:** attached storage configuration and metrics.
--   **Tags:** labels and descriptions associated with the instance.
+> Which compute option gives you the most control and also the most responsibility?
+> 
 
-**Key takeaway:** EC2 offers the most direct control over the virtual
-machine, but it also carries more operating-system and configuration
-responsibility than serverless compute.
+EC2
 
-------------------------------------------------------------------------
+> Which service would you use to run code without provisioning the required infrastructure?
+> 
 
-## 2. EC2 Core Concepts
+Lambda
 
-### Amazon Machine Image (AMI)
+> What is the name of the lab instance?
+> 
 
-An **Amazon Machine Image (AMI)** is a template used to launch an EC2
-instance. It includes the operating system and may include software and
-configuration.
+room15-web
 
--   AWS-provided and community AMIs can be selected when launching an
-    instance.
--   Custom AMIs can provide a hardened, patched, application-ready
-    baseline.
--   AMI access should be restricted appropriately because insecure
-    settings can be inherited by instances launched from it.
+### Task 3 - EC2 Core Concepts
 
-### Instance Types
+Now, the Elastic Compute Cloud (EC2) is the run-of-the-mill virtual machine you know and love. It can scale horizontally (by increasing the number of instances) and vertically (by increasing instance resources), change IPs, support multiple disks, communicate with different services, and much more. Now, let us understand some basic concepts around EC2s.
 
-An EC2 instance type defines the virtual machine's hardware profile,
-including CPU, memory, storage, and networking capacity.
+**Amazon Machine Images**
 
-Example: `t3.micro`
+An Amazon Machine Image (AMI) is a template containing the OS, software, and configuration. When launching an instance, you can select from AWS official AMIs or your own custom AMI. Creating custom AMIs is easy: you bake a hardened, patched, and application-ready instance and save a snapshot as an AMI.
 
--   `t`: instance family (burstable general purpose).
--   `3`: generation.
--   `micro`: size.
+Amazon and the Community also provide a variety of ready-to-use AMIs. They can be selected during EC2 instance creation either from the Quick Start or by browsing the Marketplace.
 
-Common families described in the room:
+![How to select standard AMIs](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1772700224950.png)
 
-  -----------------------------------------------------------------------
-  Family examples                     General purpose
-  ----------------------------------- -----------------------------------
-  `t3`, `t3a`                         Burstable general-purpose
-                                      workloads, including small
-                                      workloads and labs.
+**Instance Types**
 
-  `m5`, `m6i`                         Balanced general-purpose workloads.
+These are the AWS-provided hardware profiles of your virtual machine: CPU, memory, storage, and network capacity.
 
-  `c5`, `c6i`                         Compute-optimized workloads, such
-                                      as CPU-intensive tasks.
+**Note:** Be wary of the costs. While some instances are cheap, others can instantly increase your bill when you power them on. The [AWS Price Calculator](https://calculator.aws/) can help you understand costs before deployment.
 
-  `r5`, `r6i`                         Memory-optimized workloads, such as
-                                      databases and caching.
-  -----------------------------------------------------------------------
+They follow a naming convention:
 
-**Cost consideration:** Instance prices vary. Check expected costs with
-the AWS Pricing Calculator before deployment.
+```bash
+           t3.micro
+││  │
+││  └── Size (micro, small, medium, large, xlarge, ...)
+│└───── Generation (3)
+└────── Family (t = burstable, general purpose)
 
-### User Data
+Common Examples of Families:
+t3/t3a - burstable general purpose (good for labs and small workloads)
+m5/m6i - balanced general purpose (production workloads)
+c5/c6i - compute-optimized (CPU-heavy tasks)
+r5/r6i - memory-optimized (databases, caching)
+```
 
-**EC2 User Data** allows scripts to run during the initial launch of an
-instance. It is commonly used to install software, configure services,
-or retrieve application code.
+**User Data**
 
-Example from the room:
+User Data is a script that runs automatically when an instance is launched for the first time. Commonly used to install software, configure services, or pull application code. It will not run on subsequent User Data updates or EC2 power cycles.
 
-``` bash
-#!/bin/bash
+Example of a simple User Data script that installs the web server.
+
+```bash
+           #!/bin/bash
 yum update -y
 yum install -y httpd
 echo "My Web Server" > /var/www/html/index.html
@@ -178,261 +136,226 @@ systemctl start httpd
 systemctl enable httpd
 ```
 
-The script updates packages, installs Apache HTTP Server, creates a
-basic web page, and starts and enables the service.
+**Key Pairs**
 
-#### User Data Security
+AWS uses Key Pairs for SSH access to Linux Instances. The public key is placed on the instance, while the private key is with you. This is done during instance deployment, but you can also create key pairs for later use.
 
--   User Data scripts typically run with root privileges on Linux
-    instances.
--   User Data may be accessible through instance metadata or AWS APIs,
-    depending on permissions and configuration.
--   **Do not store passwords, API tokens, or other secrets in User
-    Data.**
--   Use AWS Secrets Manager or Systems Manager Parameter Store for
-    sensitive values, with access controlled through IAM.
--   Treat User Data and instance metadata access as part of the instance
-    security boundary.
+![Key pair selection on EC2 deployment](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1772700623828.png)
 
-### Key Pairs
+A good security consideration is to use the Session Manager service, which provides web-based instance CLI access in a more secure manner.
 
-EC2 key pairs are commonly used for SSH access to Linux instances.
+**Security Best Practices**
 
--   The **public key** is placed on the instance.
--   The **private key** is retained by the user and used to
-    authenticate.
--   Protect private key files and restrict access to them.
+- User Data scripts run as root and are stored in the instance metadata, so make sure you do not put credentials or sensitive information there.
+- Use AMIs to have hardened, patched, ready-to-use OS or application templates.
+- Make sure you tighten access to AMIs since any misconfiguration there will propagate to any new deployment.
+- Use Secrets Manager or SSM Parameter Store for sensitive information needed in the User Data script.
+- Use Session Manager in favor of SSH access.
 
-For production access, consider AWS Systems Manager Session Manager
-where appropriate.
+**Practical Exercise**
 
-### Find an Instance's AMI and Configuration
+1. In the instance details, identify the AMI used to launch the EC2.
 
-First, save the instance ID for the lab instance:
+![Identify the AMI used to launch the EC2](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771582734214.png)
 
-``` bash
-INSTANCE_ID=$(aws ec2 describe-instances \
-  --filters "Name=tag:Name,Values=room15-web" \
-            "Name=instance-state-name,Values=running" \
-  --query "Reservations[0].Instances[0].InstanceId" \
-  --output text)
+1. Alternatively, you can also use `CloudShell` (or configure AWS CLI on the Attack Box).
 
-echo "$INSTANCE_ID"
+```bash
+           # This will save the EC2 instance ID for later use
+$ INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=room15-web" "Name=instance-state-name,Values=running" \
+            --query "Reservations[0].Instances[0].InstanceId" --output text)
+
+$ echo $INSTANCE_ID
+
+i-0bb9912130618cb20$ aws ec2 describe-instances \
+            --instance-ids $INSTANCE_ID \
+            --query "Reservations[0].Instances[0].{AMI:ImageId,Type:InstanceType,KeyName:KeyName,LaunchTime:LaunchTime}" \
+            --output table
+
+------------------------------------------------------------------------------
+|                              DescribeInstances                             |
++------------------------+----------+-----------------------------+----------+
+|           AMI          | KeyName  |         LaunchTime          |   Type   |
++------------------------+----------+-----------------------------+----------+
+|  ami-0f3caa1cf4417e51b |  None    |  2026-02-20T08:56:17+00:00  |  t2.nano |
++------------------------+----------+-----------------------------+----------+
 ```
 
-Then inspect selected instance properties:
+1. Let us create a key pair. Locate the `Network & Security` group on the left, then navigate to the `Key Pair` dashboard and click the `Create Key Pair` button on the right.
 
-``` bash
-aws ec2 describe-instances \
-  --instance-ids "$INSTANCE_ID" \
-  --query "Reservations[0].Instances[0].{AMI:ImageId,Type:InstanceType,KeyName:KeyName,LaunchTime:LaunchTime}" \
-  --output table
+![Key Pair navigation link](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771582734368.png)
+
+1. Provide a key name, select `RSA` as type, and `.pem` as format, and then create your key.
+
+![Fill in the key pair creation form](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771588327495.png)
+
+**Note:** The key `.pem` file will be downloaded, but you will not use it in this room.
+
+1. Now, let us have a closer look at our instance. Navigate back to the EC2 dashboard, select the lab instance, and check the `User Data`.
+
+![Navigate to see the EC2 instance User Data.](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771582734398.png)
+
+1. Can you spot the flag in the User Data? You can also look at this in `CloudShell` (or by configuring AWS CLI on the Attack Box).
+
+**Note:** You should already have the instance ID saved in the variable. If not, rerun the command from step 2.
+
+```bash
+           $ aws ec2 describe-instance-attribute \
+            --instance-id $INSTANCE_ID \
+            --attribute userData \
+            --query "UserData.Value" --output text | base64 --decode
+
+#!/bin/bash
+yum update -y
+yum install -y httpd
+systemctl start httpd
+systemctl enable httpd# Place flag served by web server
+echo "[REDACTED]" > /var/www/html/index.html
 ```
 
-### Inspect User Data
+Excellent. Seems like `User Data` is not a safe place to store secrets.
 
-``` bash
-aws ec2 describe-instance-attribute \
-  --instance-id "$INSTANCE_ID" \
-  --attribute userData \
-  --query "UserData.Value" \
-  --output text | base64 --decode
+**Answer the questions below**
+
+> What is the flag found in the instance User Data?
+> 
+
+THM{NO_PASSWORDS_HERE}
+
+> Under which user do User Data scripts run as?
+> 
+
+root
+
+### Task 4 - Connecting to Instances
+
+Once an instance is running, you need a way to access it. You will need to consider the security advantages and disadvantages when selecting the access method.
+
+**SSH**
+
+This is the traditional approach: you use a private key file and use an SSH connection to connect to the instance's public IP and port (default 22).
+
+EC2 SSH
+
+```bash
+           $ ssh -i my-private-key.pem ec2-user@<ec2_public_ip>
 ```
 
-This command retrieves the User Data attribute and decodes its Base64
-representation. Run it only in an AWS environment where you are
-authorized to inspect the instance.
+This requires:
 
-**Lab observation:** The room's User Data contained a flag,
-demonstrating why secrets should not be embedded in startup scripts.
+- Port 22 is open in the Security Group associated with the instance.
+- A public IP on the instance.
+- A key pair configured at launch.
 
-------------------------------------------------------------------------
+**Session Manager**
 
-## 3. Connecting to EC2 Instances
+This is the recommended approach and provides a browser-based or CLI-based shell session. **Note:** The AWS CLI will require the Session Manager plugin installed.
 
-Two access approaches covered in the room are SSH and AWS Systems
-Manager Session Manager.
+EC2 SSM
 
-### SSH
-
-SSH connects to a Linux instance using a private key and the instance's
-public IP address.
-
-``` bash
-ssh -i my-private-key.pem ec2-user@<ec2_public_ip>
+```bash
+           $ aws ssm start-session --target <instance_id>
 ```
 
-Typical requirements:
+This requires:
 
--   The instance has a reachable public IP or another network path.
--   The associated security group allows TCP port `22` from the
-    connecting source.
--   A suitable key pair is configured.
--   The correct username and private key are used.
+- SSM Agent (AWS standard AMIs pre-bundle them).
+- AWS CLI Session Manager plugin.
+- IAM policy granting access.
 
-**Security recommendations:**
+The SSM Agent on the instance communicates outbound to the AWS SSM service, access is controlled through IAM policies, and every session is logged.
 
--   Restrict SSH ingress to specific trusted IP addresses instead of
-    opening it broadly.
--   Protect private keys and rotate or replace them when needed.
--   Avoid exposing SSH publicly when an alternative access method is
-    available.
+The SSM Session Manager status should be Connected if everything is set up correctly.
 
-### AWS Systems Manager Session Manager
+**Security Best Practices**
 
-Session Manager provides browser-based or CLI-based shell access without
-requiring inbound SSH access to the instance.
+- Prefer SSM over SSH whenever possible.
+- If SSH is required, restrict the Security Group to specific IPs and rotate keys regularly.
+- Avoid using the default instance users, for example, ec2-user or ubuntu, for production workloads.
+- Log all session activity through Session Manager's built-in logging.
 
-``` bash
-aws ssm start-session --target <instance_id>
+**Practical Exercise**
+
+1. Navigate to the lab instance and choose Connect.
+
+![Select and connect to the EC2 instance.](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771583375773.png)
+
+1. Choose SSM Session Manager and Connect.
+
+![Choose SSM Session Manager and connect.](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771583377096.png)
+
+1. A new tab will open, and you should see the instance CLI. Run the `whoami` command.
+
+![SSM instance CLI](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771585059169.png)
+
+1. From within the instance, you can also retrieve the instance type or other metadata information.
+
+```bash
+           # This will store the session token in a variable
+$ TOKEN=$(curl -s -X PUT "<http://169.254.169.254/latest/api/token>" \
+          -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+$ curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
+          <http://169.254.169.254/latest/meta-data/instance-type>
+t2.nano
 ```
 
-Typical requirements include:
+You can play with the command and see what other interesting information lies in the instance metadata.
 
--   The SSM Agent is installed and running on the instance.
--   The instance can communicate outbound with the Systems Manager
-    service.
--   The instance has an appropriate IAM role or permissions.
--   The operator's IAM identity is authorized to start a session.
--   For CLI use, the Session Manager plugin is installed.
+**Answer the questions below**
 
-Session Manager activity can be logged when the relevant logging
-configuration is enabled.
+> What user is showing when you run the `whoami` command?
+> 
 
-**Security recommendation:** Prefer Session Manager over SSH when it
-meets operational requirements. Apply least-privilege IAM permissions
-and enable suitable session logging.
+ssm-user
 
-### Retrieve EC2 Instance Metadata
+> What is the IP address you query for instance metadata?
+> 
 
-The room demonstrates retrieving an IMDSv2 token before requesting
-metadata:
+169.254.169.254
 
-``` bash
-TOKEN=$(curl -s -X PUT \
-  "http://169.254.169.254/latest/api/token" \
-  -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+### Task 5 - Pets Versus Cattle
 
-curl -s \
-  -H "X-aws-ec2-metadata-token: $TOKEN" \
-  "http://169.254.169.254/latest/meta-data/instance-type"
-```
+When migrating to the cloud, you need to consider a paradigm shift in how you manage the infrastructure. When talking about on-prem versus cloud, you need to move from the 'Pets' model to the 'Cattle' model.
 
-The metadata service address is `169.254.169.254`. The example returns
-the instance type, such as `t2.nano`, for the lab instance.
+**The Pets Model**
 
-Metadata can expose useful instance information and may provide access
-to role credentials when an instance role is configured. Restrict access
-to metadata and avoid allowing untrusted workloads to query it.
+In the usual on-prem environment, servers are like pets. You take care of them, patch them individually, and give them friendly names (e.g., mail server named 'Pidgey'). If a server goes down, rebuilding it from scratch sometimes takes hours or days.
 
-------------------------------------------------------------------------
+**The Cattle Model**
 
-## 4. Pets Versus Cattle
+In the cloud, instances should be treated as cattle. They are identical, replaceable, and easy to spin up or down. Leveraging pre-baked images (AMIs and container images) ensures consistent, scalable deployments.
 
-The pets-versus-cattle model describes two approaches to managing
-infrastructure.
+Here are a couple of advantages of shifting to this model:
 
-### Pets Model
+- **Immutable infrastructure** - patching, hardening, and configuration updates are built in a new template, which replaces all instances.
+- **Reduced attack persistence** - if an attacker compromises an instance, replacing it removes the compromise. Combined with detection, this makes persistence much harder.
+- **Reproducibility** - the environment can be deployed as code (Infrastructure as Code), which makes disaster recovery much faster and the infrastructure more reliable.
+- **No configuration drift** - servers are configured uniformly and do not accumulate custom changes during their lifecycle.
 
-Servers are treated as unique systems that are maintained individually
-and may have memorable names. If a server fails, restoring it can
-require significant manual work.
+Below is an example of how this might look in practice.
 
-### Cattle Model
+![Cattle deployment pattern](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1781259084444.png)
 
-Instances are designed to be replaceable and consistent. Instead of
-manually repairing each instance, teams create new instances from
-approved templates and automate deployment.
+**Note:** AutoScaling Group is a logical unit that manages a collection of EC2 instances.
 
-Benefits include:
+**Security Best Practices**
 
--   **Immutable infrastructure:** changes are made to a new image or
-    template, which replaces existing instances rather than relying on
-    ad hoc changes.
--   **Reduced persistence opportunities:** replacing a compromised
-    instance can remove changes made to that instance, although
-    detection, credential rotation, and investigation may still be
-    required.
--   **Reproducibility:** Infrastructure as Code can help recreate
-    environments consistently.
--   **Reduced configuration drift:** instances are built from consistent
-    baselines.
--   **Faster recovery:** automated deployment can reduce recovery time.
+- Treat instances as "disposables" - design your application or infrastructure so no single instance is irreplaceable.
+- Store application state externally (e.g., databases, S3, EFS) and not on the instance itself.
+- Automate instance creation through Infrastructure as Code (CloudFormation, Terraform).
+- Log everything to dedicated locations and services (CloudWatch, S3).
 
-An **Auto Scaling Group** manages a collection of EC2 instances and can
-help maintain the desired capacity.
+**Answer the questions below**
 
-### Security Best Practices
+> How do you call an infrastructure where you build new AMIs instead of patching individual instances?
+> 
 
--   Design instances to be replaceable rather than irreplaceable.
--   Keep persistent application data outside individual instances where
-    appropriate, such as in databases, Amazon S3, or Amazon EFS.
--   Automate provisioning through Infrastructure as Code tools such as
-    AWS CloudFormation or Terraform.
--   Send logs to dedicated services or storage, such as Amazon
-    CloudWatch and Amazon S3.
--   Build patching and hardening into approved images and deployment
-    pipelines.
--   Remember that replacing an instance is not a substitute for
-    investigating a compromise or securing affected credentials and
-    other resources.
+Immutable
 
-------------------------------------------------------------------------
+### Task 6 - Conclusion
 
-## 5. Lab Questions and Answers
-
-  -----------------------------------------------------------------------
-  Question                            Answer
-  ----------------------------------- -----------------------------------
-  Which compute option gives the most EC2
-  control and responsibility?         
-
-  Which service runs code without you AWS Lambda
-  provisioning the infrastructure?    
-
-  What is the name of the lab         room15-web
-  instance?                           
-
-  What flag was found in the instance THM{NO_PASSWORDS_HERE}
-  User Data?                          
-
-  Under which user do User Data       root
-  scripts run?                        
-
-  What user appeared when running     ssm-user
-  `whoami` in the Session Manager     
-  shell?                              
-
-  What IP address is used for EC2     169.254.169.254
-  instance metadata?                  
-
-                           
-  -----------------------------------------------------------------------
-
-------------------------------------------------------------------------
-
-## Key Takeaways
-
--   EC2 provides extensive control but requires responsibility for OS
-    security, patching, and configuration.
--   Choose EC2, containers, or Lambda according to the workload and
-    management requirements.
--   AMIs can provide consistent, hardened instance baselines.
--   Never store secrets in User Data; use a dedicated secrets service
-    and restrictive IAM permissions.
--   Prefer Session Manager over publicly exposed SSH where practical.
--   Use IMDSv2 and restrict access to instance metadata.
--   Treat cloud instances as replaceable, automate deployment, and keep
-    persistent data and logs outside individual instances where
-    appropriate.
-
-------------------------------------------------------------------------
-
-## Skills Practiced
-
--   AWS compute service selection
--   EC2 instance inspection using the AWS Console and CLI
--   AMI, instance type, User Data, and key pair concepts
--   Secure instance access with SSH and Session Manager
--   EC2 instance metadata queries using IMDSv2
--   Cloud security and immutable infrastructure principles
+- EC2s give you full control over the virtual machine, but also full responsibility for its security.
+- Never put secrets in User Data; use AWS dedicated services for storing sensitive information.
+- The "cattle not pets" mindset is a good security strategy that reduces drift, limits persistence, and shortens recovery time.

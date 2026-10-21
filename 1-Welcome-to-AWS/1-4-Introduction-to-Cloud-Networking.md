@@ -1,340 +1,402 @@
-# TryHackMe -- AWS Networking
+# AWS 1-4-Introduction to Cloud Networking
 
-> **Platform:** TryHackMe\
-> **Room:** AWS Networking\
-> **Category:** Cloud Security \| AWS \| Networking\
-> **Services & Tools:** Amazon VPC, Subnets, Route Tables, Internet
-> Gateway, NAT Gateway, Security Groups, Network ACLs, AWS CLI,
-> CloudShell
+### Task 1 - Introduction
 
-------------------------------------------------------------------------
+In this room, you will explore the different AWS network resources and how traffic flows between them.
 
-## Overview
+### Task 2 - Virtual Private Cloud Service
 
-This write-up covers core AWS networking components and how network
-traffic flows through a Virtual Private Cloud (VPC). The practical
-exercises focus on identifying VPC resources, examining routes and
-access controls, and understanding how a public web server communicates
-with other resources.
+A Virtual Private Cloud allows you to define your very own little corner in the cloud. You can think of it as a small data center where you define IP address ranges, network segmentation, and control traffic flow.
 
-The lab uses the AWS region `us-east-1`.
+A virtual private cloud (VPC) is an isolated, private cloud inside of a public cloud environment. VPCs are granted to users of cloud providers so that their resources aren't accessible by other users in the same public cloud.
 
-## Task 1 -- Introduction
+VPC key points:
 
-The room introduces AWS network resources and the way traffic flows
-between them.
+- A VPC lives in a single region - a representative geographical location.
+- Each region consists of multiple Availability Zones, which are physically separated data centers connected with low-latency links.
+- When creating a VPC, you define the CIDR block, for example, `10.0.0.0/16`, that you can further split into subnets.
+- Every AWS account comes with a default VPC in each region.
 
-## Task 2 -- Virtual Private Cloud (VPC)
+**Security Best Practices**
 
-A **Virtual Private Cloud (VPC)** is an isolated network within AWS. It
-provides control over IP address ranges, network segmentation, and
-traffic flow.
+- Well-segmented networks reduce blast radius in case of a compromise.
+- While the default VPC is good for short tests, when implementing a production setup, it is best to define your own VPC and network topology.
+- VPCs are core building blocks of network isolation, so planning a good network layout goes a long way.
+- Use different Availability Zones when defining your subnets; this ensures high availability, fault tolerance, and scalability.
+- Tightly manage VPC resource access through well-defined roles and permissions through the IAM service.
+- Use VPC Flow Logs, the service that records metadata about IP traffic, as a first line of network monitoring and analysis.
 
-### Key concepts
+**Practical Exercise**
 
--   A VPC exists in a single AWS Region.
--   Each Region contains multiple Availability Zones (AZs), which are
-    physically separate data centers connected by low-latency links.
--   A VPC uses a CIDR block, such as `10.0.0.0/16`, which can be divided
-    into smaller subnet ranges.
--   Each AWS account has a default VPC in each Region.
+1. Log in to the AWS Console with the provided credentials.
 
-### Security best practices
+**Note:** Be sure to check and switch to the `us-east-1` region.
 
--   Segment networks to reduce the blast radius of a compromise.
--   Use a planned VPC and network topology for production environments
-    rather than relying on the default VPC.
--   Place subnets across multiple Availability Zones where appropriate
-    to support availability, fault tolerance, and scalability.
--   Control access to VPC resources with well-defined IAM roles and
-    permissions.
--   Enable **VPC Flow Logs** to record metadata about IP traffic for
-    monitoring and analysis.
+1. Navigate to the VPC service.
 
-### Practical commands
+![Navigate to the VPC service](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1772604068172.png)
 
-Use the AWS Console, CloudShell, or the AWS CLI to inspect VPCs:
+1. The VPC dashboard will give you a summary of network resources.
 
-``` bash
-aws ec2 describe-vpcs
+![Identify the details of the VPC](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1772604073308.png)
+
+1. Alternatively, you can use CloudShell or AWS CLI to get a feel of the commands used.
+
+```bash
+$ aws ec2 describe-vpcs
+
+{
+    "Vpcs": [
+        {
+            "OwnerId": "146655971864",
+            "InstanceTenancy": "default",
+            "CidrBlockAssociationSet": [
+                {
+                    "AssociationId": "vpc-cidr-assoc-0c671245996463616",
+                    "CidrBlock": "[REDACTED]",
+                    "CidrBlockState": {
+                        "State": "associated"
+                    }
+                }
+            ],
+[...]
 ```
 
-The command returns VPC details, including CIDR blocks and associated
-metadata.
+**Answer the questions below**
 
-### Lab findings
+> What is the name of the VPC?
+> 
 
-  Question             Answer
-  -------------------- -----------------
-  VPC name             `lab-vpc`
-  Lab VPC CIDR block   `172.16.0.0/16`
+lab-vpc
 
-## Task 3 -- Subnets and Routing
+> What is the CIDR block of the lab VPC?
+> 
 
-A subnet is a defined IP address range inside a VPC. Route tables
-determine where traffic from a subnet is directed.
+172.16.0.0/16
 
-### Public and private subnets
+### Task 3 - Subnet and Routing
 
--   **Public subnet:** Has a route to an Internet Gateway. Resources
-    generally also need a public IP address and suitable security rules
-    to communicate directly with the internet.
--   **Private subnet:** Has no direct route to an Internet Gateway. It
-    can use a NAT Gateway for outbound internet access, while remaining
-    unavailable for direct inbound connections from the internet.
+Within a VPC, you divide the defined CIDR into usable IP ranges called subnets and shape traffic flow between them using routes.
 
-### Route tables
+**Subnets**
 
-A route table contains destination-and-target rules. Each subnet is
-associated with a route table, either explicitly or through the VPC's
-main route table.
+Within a subnet, you define the IP range that can be used by resources.
 
-Example public-subnet routes:
+Typically, you will see two main subnet types:
 
-  -----------------------------------------------------------------------
-  Destination             Target                  Purpose
-  ----------------------- ----------------------- -----------------------
-  `10.0.0.0/16`           `local`                 Routes traffic within
-                                                  the VPC
+- **Public subnets** - they have a route to an Internet Gateway, so resources with public IPs can reach the internet directly.
+- **Private subnets** - there is no direct internet route, so resources are isolated from the internet.
 
-  `0.0.0.0/0`             Internet Gateway        Routes other IPv4
-                          (`igw-...`)             traffic toward the
-                                                  internet
-  -----------------------------------------------------------------------
+**Routing**
 
-The `0.0.0.0/0` route is a default route for IPv4 traffic not matched by
-a more specific route.
+A route table is a set of rules, called routes, that determine where network traffic is directed. Each subnet must be associated with a route table.
 
-### Gateways
+One noticeable aspect is the main route table. This is the route table that automatically comes with your VPC. It controls the routing for all subnets that are not explicitly associated with any other route table.
 
--   **Internet Gateway (IGW):** Enables internet connectivity for a VPC
-    when routing, public addressing, and access rules are configured
-    appropriately.
--   **NAT Gateway:** Allows resources in private subnets to initiate
-    outbound connections, such as downloading updates, without allowing
-    unsolicited inbound internet connections through the NAT Gateway.
+A typical public subnet route table looks like this:
 
-### Inspect subnets
+| **Destination** | **Target** |
+| --- | --- |
+| 10.0.0.0/16 | local |
+| 0.0.0.0/0 | igw-0abc123 |
 
-First, save the ID of the non-default lab VPC in a shell variable:
+In simple terms, whatever goes to the `10.0.0.0/16` subnet stays within the VPC, while the `0.0.0.0/0` route redirects traffic outside the VPC, in this case to the internet.
 
-``` bash
-LAB_VPC=$(aws ec2 describe-vpcs \
-  --filters "Name=isDefault,Values=false" \
-  --query "Vpcs[0].VpcId" \
-  --output text)
+Private subnets usually have the "catch-all" destination set to a NAT Gateway so they can reach the internet (e.g., for updates, patching, etc.), but they will not be reachable from the internet.
+
+**Gateways**
+
+Gateways are network nodes that connect different networks and act as translators between different protocols, data formats, or architectures.
+
+In AWS, most commonly, you will see:
+
+- **Internet Gateway** - enables bidirectional Internet access for public subnets.
+- **NAT Gateway** - enables outbound-only Internet access for private subnets.
+
+**Practical Exercise**
+
+1. First, you can view the lab setup subnets in the Subnets dashboard.
+
+**Note:** When multiple VPCs have associated subnets, this dashboard provides an overview of all subnets across those VPCs.
+
+![Find the details of the subnets](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1772604575848.png)
+
+1. You can see the routes for your VPC in the Routes dashboard.
+
+![Explore the VPC route tables](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1772604575767.png)
+
+1. Lastly, you can further explore different VPC elements by using the left-side shortcuts.
+
+![VPC important subservices](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1772604575749.png)
+
+As a good exercise, you can also explore the components from CloudShell or AWS CLI using AWS commands.
+
+1. You will have to be aware of the VPC ID. In this example, the ID is saved in a local variable.
+
+**Note:** There will be commands, like the one below, that have no output.
+
+```bash
+$ LAB_VPC=$(aws ec2 describe-vpcs \
+            --filters "Name=isDefault,Values=false" \
+            --query "Vpcs[0].VpcId" --output text)
 ```
 
-Then list the subnets associated with that VPC:
+1. Next, you can list the subnets for the VPC.
 
-``` bash
-aws ec2 describe-subnets \
-  --filters "Name=vpc-id,Values=$LAB_VPC" \
-  --query "Subnets[*].{ID:SubnetId,CIDR:CidrBlock,AZ:AvailabilityZone,Name:Tags[?Key=='Name']|[0].Value}" \
-  --output table
+```bash
+$ aws ec2 describe-subnets \
+            --filters "Name=vpc-id,Values=$LAB_VPC" \
+            --query "Subnets[*].{ID:SubnetId,CIDR:CidrBlock,AZ:AvailabilityZone,Name:Tags[?Key=='Name']|[0].Value}" \
+            --output table
+
+-----------------------------------------------------------------------------------
+|                                 DescribeSubnets                                 |
++------------+----------------+----------------------------+----------------------+
+|     AZ     |     CIDR       |            ID              |        Name          |
++------------+----------------+----------------------------+----------------------+
+|  us-east-1a|  [REDACTED]    |  subnet-04f506d8031f4d6e7  |  lab-public-subnet   |
+|  us-east-1a|  [REDACTED]    |  subnet-008254d25456c7b43  |  lab-private-subnet  |
++------------+----------------+----------------------------+----------------------+
 ```
 
-### Inspect route tables
+1. Or you can list the VPC routes.
 
-``` bash
-aws ec2 describe-route-tables \
-  --filters "Name=vpc-id,Values=$LAB_VPC" \
-  --query "RouteTables[*].{ID:RouteTableId,Name:Tags[?Key=='Name']|[0].Value,Routes:Routes[*].{Dest:DestinationCidrBlock,Target:GatewayId||NatGatewayId}}" \
-  --output json
+```bash
+$ aws ec2 describe-route-tables \
+            --filters "Name=vpc-id,Values=$LAB_VPC" \
+            --query "RouteTables[*].{ID:RouteTableId,Name:Tags[?Key=='Name']|[0].Value,Routes:Routes[*].{Dest:DestinationCidrBlock,Target:GatewayId||NatGatewayId}}" \
+            --output json
+
+[
+    {
+        "ID": "[REDACTED]",
+        "Name": "lab-public-rt",
+        "Routes": [
+            {
+                "Dest": "[REDACTED]",
+                "Target": "local"
+            },
+            {
+                "Dest": "0.0.0.0/0",
+                "Target": "igw-02d11d6658c2dfcd0"
+            }
+        ]
+    },
+
+[...]
 ```
 
-These commands can help automate the collection of subnet and routing
-information.
+You can use the CLI commands for programmatic access and extract just the needed information. This can be used in automation scripts.
 
-### Lab findings
+**Answer the questions below**
 
-  Question                Answer
-  ----------------------- -----------------
-  Public subnet CIDR      `172.16.1.0/24`
-  Route table ID prefix   `rtb`
+> What is the CIDR of the public subnet?
+> 
 
-## Task 4 -- Security Groups and Network ACLs
+172.16.1.0/24
 
-AWS provides two key network access-control layers: **Security Groups**
-and **Network Access Control Lists (NACLs)**.
+> What is the usual prefix for route IDs?
+> 
 
-### Security Groups vs. NACLs
+rtb
 
-  -----------------------------------------------------------------------
-  Capability              Security Group          Network ACL (NACL)
-  ----------------------- ----------------------- -----------------------
-  Applied at              Network interface /     Subnet level
-                          instance level          
+### Task 4 - Security Groups and Network ACLs
 
-  Connection tracking     Stateful                Stateless
+AWS provides two layers of network-level access control with similar goals but that work differently: Security Groups and Network Access Control Lists.
 
-  Rule actions            Allow rules only        Allow and deny rules
+**SG Versus NACL**
 
-  Rule evaluation         All applicable rules    Rules are evaluated in
-                          are evaluated together  ascending rule-number
-                                                  order
+Security Groups act as a virtual, stateful firewall at the instance level, attached to Elastic Network Interfaces (ENIs).
 
-  -----------------------------------------------------------------------
+Network Access Control Lists act as broader, stateless firewalls at the subnet level to control inbound/outbound traffic.
 
-**Stateful** means response traffic for an allowed connection is
-automatically permitted. **Stateless** means inbound and outbound
-traffic are evaluated independently, so NACL rules must account for both
-directions.
+You have to be aware of the distinction between stateful and stateless. Stateful means the state of the connection is retained, meaning an SG would only need inbound rules. Stateless, by contrast, does not retain connection state, so NACLs need both inbound and outbound rules.
 
-### Security best practices
+Here is a helpful table to view the key capabilities and differences at a glance.
 
--   Use Security Groups to control traffic to individual resources or
-    groups of resources.
--   Use NACLs as an additional subnet-level control.
--   Apply the **Principle of Least Privilege**: allow only the required
-    sources, destinations, protocols, and ports.
--   Use layered controls, with Security Groups providing resource-level
-    restrictions and NACLs acting as additional guardrails.
+| **Capability** | **Security Group** | **Network Access Control List** |
+| --- | --- | --- |
+| **Level** | Instance (ENI) | Subnet |
+| **Stateful** | Yes | No |
+| **Rule types** | Allow only | Allow and Deny |
+| **Evaluation** | All rules together | Numbered order |
+| **Default Inbound** | Deny all | Allow all |
 
-### List Security Groups
+**Security Best Practices**
 
-``` bash
-aws ec2 describe-security-groups \
-  --filters "Name=vpc-id,Values=$LAB_VPC" \
-  --query "SecurityGroups[*].{ID:GroupId,Name:GroupName,Description:Description}" \
-  --output table
+- Use Security Groups to control access to individual resources or groups of resources.
+- Use NACLs as a broader safety net at the subnet level.
+- In line with the Principle of Least Privilege, understand the traffic your VPC or subnet will have and open only the appropriate ports.
+- Use layered security by implementing tighter constraints with Security Groups and use NACLs as additional guardrails.
+
+**Practical Exercise**
+
+Security Groups and NACLs can be explored in the web interface with ease.
+
+1. From the left side, select Security groups and you can drill down into the details by selecting one Security Group.
+
+![Details about the security groups](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1772604796007.png)
+
+1. Similarly, you can see the defined NACLs.
+
+![Showing details about the Network Access Control Lists](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1772605299333.png)
+
+1. From CLI, you can run the following command to list a VPC's Security Groups.
+
+**Note:** Either replace the `$LAB_VPC` placeholder or use the command from the previous task to save the VPC ID.
+
+```bash
+$ aws ec2 describe-security-groups \
+            --filters "Name=vpc-id,Values=$LAB_VPC" \
+            --query "SecurityGroups[*].{ID:GroupId,Name:GroupName,Description:Description}" \
+            --output table
+
+------------------------------------------------------------------------------
+|                          DescribeSecurityGroups                            |
++-------------------------------------+------------------------+-------------+
+|           Description               |          ID            |    Name     |
++-------------------------------------+------------------------+-------------+
+|  default VPC security group         |  sg-033f66042b736b1d4  |  default    |
+|  Allow access to the lab web server |  sg-08d6604eefc9dd6d9  |  lab-web-sg |
++-------------------------------------+------------------------+-------------+
 ```
 
-### List Network ACLs
+1. NACLs can be shown in a similar manner.
 
-``` bash
-aws ec2 describe-network-acls \
-  --filters "Name=vpc-id,Values=$LAB_VPC" \
-  --query "NetworkAcls[*].{ID:NetworkAclId,Default:IsDefault,Entries:Entries[*].{Rule:RuleNumber,Action:RuleAction,CIDR:CidrBlock,Protocol:Protocol}}" \
-  --output json
+```bash
+$ aws ec2 describe-network-acls \
+            --filters "Name=vpc-id,Values=$LAB_VPC" \
+            --query "NetworkAcls[*].{ID:NetworkAclId,Default:IsDefault,Entries:Entries[*].{Rule:RuleNumber,Action:RuleAction,CIDR:CidrBlock,Protocol:Protocol}}" \
+            --output json
+
+[
+    {
+        "ID": "acl-0977594a5268e386d",
+        "Default": false,
+        "Entries": [
+            {
+                "Rule": 100,
+                "Action": "allow",
+                "CIDR": "0.0.0.0/0",
+                "Protocol": "-1"
+            },
+            {
+                "Rule": 32767,
+                "Action": "deny",
+                "CIDR": "0.0.0.0/0",
+                "Protocol": "-1"
+            },
+            {
+                "Rule": 100,
+                "Action": "allow",
+                "CIDR": "0.0.0.0/0",
+                "Protocol": "6"
+[...]
 ```
 
-### Lab findings
+**Answer the questions below**
 
-  Question                                              Answer
-  ----------------------------------------------------- ----------------
-  Which network access control is stateful?             Security Group
-  Inbound ports open in `lab-web-sg`, ascending order   `22, 80, 443`
+> What type of network access control is stateful?
+> 
 
-## Task 5 -- AWS Network Flow
+Security Group
 
-Understanding the packet path helps identify where access may be
-permitted or blocked.
+> What inbound ports are opened by the lab-web-sg Security Group (listed in ascending order)?
+> 
 
-### Internet to the public web server
+22,80,443
 
-The lab describes the following inbound path:
+### Task 5 - AWS Network Flow
 
-1.  The request arrives at the **Internet Gateway (IGW)**.
-2.  The IGW forwards the traffic into the VPC.
-3.  The VPC router checks the route table associated with the
-    destination subnet.
-4.  The subnet's **Network ACL** evaluates the inbound rules.
-5.  The web server's **Security Group** evaluates the inbound traffic.
-6.  If allowed, traffic reaches the instance through its **Elastic
-    Network Interface (ENI)**.
-7.  The response returns through the instance's Security Group; the
-    stateless NACL separately evaluates outbound rules.
+Now that you have a good understanding of the different components, let us put everything together and follow the journey of a network request. Below is a common network topology.
 
-A simplified path is:
+![AWS Network Flow Diagram](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1770978108517.png)
 
-``` text
-Internet
-   |
-Internet Gateway
-   |
-VPC routing
-   |
-Subnet Route Table
-   |
-Inbound Network ACL
-   |
-Web Server Security Group
-   |
-Elastic Network Interface
-   |
-EC2 Web Server
+Let us follow a packet that arrives from the Internet and tries to reach the web server (green trace):
+
+1. The request arrives at the Internet Gateway (IGW).
+2. The IGW forwards it to the VPC router.
+3. The VPC router checks the route table associated with the target subnet.
+4. The request is then forwarded to the target subnet Network Access Control List (NACL), where inbound rules are evaluated.
+5. Then the request reaches the Security Group (SG) of the web server instance.
+6. If the SG allows it, the request reaches the Elastic Network Interface (ENI) of the instance.
+7. The response from the instance travels back to the SG (stateful), but the NACL evaluates the outbound rules (stateless).
+
+See if you can figure out the flow when the web server reaches the backend application server (blue trace).
+
+**Security Best Practices**
+
+- Understanding how traffic flows within a VPC is essential in implementing tight security controls.
+- Network is essential for reducing the blast radius and improving containment in the event of a security incident.
+    
+    segmentation
+    
+- Keep in mind that Security Groups do not filter the following services: Amazon DNS, Amazon DHCP, Amazon EC2 instance metadata, Amazon ECS metadata, License activation for Windows instances, or Amazon NTP service.
+- Avoid using catch-all IP ranges, like `0.0.0.0/0`.
+- Avoid opening port ranges unless you really need them. Use port-specific entries for tighter security.
+
+**Practical Exercise**
+
+Let us better understand how everything fits together. Open the `View Site`, and you will have two exercises:
+
+- In the first exercise, you will have to place the elements in their correct place and order.
+- In the second exercise, you will have to configure each element in accordance with the principle of least privilege so that the web server is accessible from the Internet and the private instance is managed only from the public subnet.
+
+Moving back to the AWS environment, the lab deployment includes a small web server. Can you find it?
+
+**Note:** Either replace the `$LAB_VPC` placeholder or use the command from the previous task to save the VPC ID.
+
+1. Identify the EC2 instance.
+
+```bash
+$ aws ec2 describe-instances \
+            --filters "Name=vpc-id,Values=$LAB_VPC" "Name=instance-state-name,Values=running" \
+            --query "Reservations[*].Instances[*].{ID:InstanceId,PublicIP:PublicIpAddress,PrivateIP:PrivateIpAddress,Name:Tags[?Key=='Name']|[0].Value}" \
+            --output table
+
+----------------------------------------------------------------------------
+|                             DescribeInstances                            |
++----------------------+-----------------+---------------+-----------------+
+|          ID          |      Name       |   PrivateIP   |    PublicIP     |
++----------------------+-----------------+---------------+-----------------+
+|  i-03443b8bad51619d5 |  lab-web-server |  172.16.1.223 |  54.227.90.236  |
++----------------------+-----------------+---------------+-----------------+
 ```
 
-### Network security recommendations
+1. From the command output, you can note the public IP associated with the instance and use curl to extract the flag.
 
--   Understand the complete traffic path before changing network
-    controls.
--   Use network segmentation to reduce the blast radius and improve
-    containment during an incident.
--   Avoid broad source ranges such as `0.0.0.0/0` unless public access
-    is genuinely required.
--   Avoid opening large port ranges when specific ports are sufficient.
--   Remember that Security Groups do not filter certain AWS-related
-    traffic and services, including Amazon DNS, DHCP, EC2 instance
-    metadata, ECS metadata, Windows license activation, and Amazon NTP.
+**Note:** The public IP will vary by lab deployment, and the web page is served over HTTP.
 
-### Identify the lab web server
-
-``` bash
-aws ec2 describe-instances \
-  --filters "Name=vpc-id,Values=$LAB_VPC" "Name=instance-state-name,Values=running" \
-  --query "Reservations[*].Instances[*].{ID:InstanceId,PublicIP:PublicIpAddress,PrivateIP:PrivateIpAddress,Name:Tags[?Key=='Name']|[0].Value}" \
-  --output table
+```bash
+$ curl -s <http://54.227.90.236>
+<html>
+<body>
+<h1>Cloud Networking Lab</h1>
+<p>Flag: [REDACTED]</p>
+</body>
+</html>
 ```
 
-The lab output identifies an instance named `lab-web-server`. The
-instance's public IP can vary between lab deployments.
+**Answer the questions below**
 
-To retrieve the HTTP response from the lab server, use the public IP
-returned by your own command:
+> What is the mini-game flag?
+> 
 
-``` bash
-curl -s http://<PUBLIC_IP>
-```
+THM{AWS_NETWORKING_101}
 
-Replace `<PUBLIC_IP>` with the actual public IP address from your lab.
-Do not assume an IP shown in an example will remain valid.
+> What is the web server flag?
+> 
 
-### Lab flags
+THM{TANGLED_WEBS}SSssssssS
 
-  Exercise                 Flag
-  ------------------------ ---------------------------
-  Network flow mini-game   `THM{AWS_NETWORKING_101}`
-  Web server               `THM{TANGLED_WEBS}`
+### Task 6 - Conclusion
 
-  <img width="634" height="451" alt="image" src="https://github.com/user-attachments/assets/f6a0e4df-1d74-4778-baa4-2668eff8ce85" />
-  <img width="485" height="334" alt="image" src="https://github.com/user-attachments/assets/67124396-6821-4f7f-a7df-01eb20f4201f" />
+Well done! You now have a good understanding of the networking building blocks in AWS and how to view them from a security perspective.
 
+**Key Takeaways**
 
-
-## Task 6 -- Conclusion
-
-This room demonstrates how AWS networking components work together and
-how they can be reviewed from a security perspective.
-
-### Key takeaways
-
--   A VPC provides an isolated network boundary within AWS.
--   CIDR blocks define address ranges, which can be divided into
-    subnets.
--   Public-subnet internet connectivity typically uses an Internet
-    Gateway and appropriate routing and access rules.
--   Private subnets can use a NAT Gateway for outbound connections
-    without exposing resources to direct inbound internet connections.
--   Route tables determine where network traffic is directed.
--   Security Groups are stateful and apply at the
-    network-interface/resource level.
--   NACLs are stateless and apply at the subnet level.
--   A typical inbound path to a public EC2 web server is: **IGW → VPC
-    routing → route table → NACL → Security Group → ENI/instance**.
--   VPC Flow Logs can support network monitoring, investigation, and
-    traffic analysis.
--   Least-privilege rules and network segmentation help reduce exposure
-    and limit the impact of a compromise.
-
-------------------------------------------------------------------------
-
-## Skills Demonstrated
-
--   AWS VPC and subnet inspection
--   Route table and gateway analysis
--   Security Group and Network ACL comparison
--   AWS CLI querying and filtering with `--query`
--   Understanding inbound traffic flow to an EC2 web server
--   Applying network segmentation and least-privilege principles
+- VPCs are isolated networks in the cloud.
+- Good network segmentation limits blast radius.
+- Public subnets access the internet through IGW routes; private subnets use NAT gateways for outbound-only access.
+- Security Groups are stateful and operate at the instance level, while NACLs are stateless and are attached to subnets.
+- Typical network flow in a VPC : IGW -> route table -> NACL -> SG -> instance.

@@ -1,3 +1,5 @@
+# AWS 1.6. Introduction to Cloud Storage
+
 ### Task 1 - Introduction
 
 Every application generates, processes, or stores data. In AWS, how you store that data affects its availability, durability, cost, and most importantly, security.
@@ -16,7 +18,7 @@ In this room, you will explore the most common storage services found in AWS and
 Before diving into individual services, it is a good idea to understand the three storage models AWS uses. Each model addresses a different use case, and most of the real-world architectures combine all three.
 
 - **Object Storage** - Every piece of data is a self-contained object, a file, and the associated metadata, stored in a flat structure called a bucket. This is ideal for files written once and read many times (WORM).
-- **Block Storage** - This is like your traditional hard drive. It can be formatted, attached to an  EC2 instance, is persistent across stop/start cycles, and can be detached and reattached to other EC2 Instances in the same Availability Zone. EBS is a good choice for frequently changing data that needs low-latency access.
+- **Block Storage** - This is like your traditional hard drive. It can be formatted, attached to an EC2 instance, is persistent across stop/start cycles, and can be detached and reattached to other EC2 Instances in the same Availability Zone. EBS is a good choice for frequently changing data that needs low-latency access.
 - **File Storage** - This type of model provides a shared file system accessible by multiple instances simultaneously over a network. EFS is an AWS fully managed service that scales automatically. It is designed for when multiple EC2 instances require concurrent read/write access to the same files.
 
 **Models Comparison**
@@ -49,14 +51,12 @@ Once completed, your efforts will be rewarded with a flag.
 > From a security point of view, how is data at rest usually protected?
 > 
 
- Encryption
+Encryption
 
 > What is the flag from the mini-game?
 > 
 
- THM{ONE_BITE_AT_A_TIME}
-
-!image.png
+THM{ONE_BITE_AT_A_TIME}
 
 ### Task 3 - Simple Storage Service
 
@@ -68,7 +68,7 @@ Even if AWS strongly fights to keep your buckets private and public access is bl
 
 AWS S3 uses buckets, which are containers for storing objects. Here are a couple of key ideas:
 
-- Bucket names are globally unique, are created, and live in a specific AWS Region. Amazon also introduced Account Regional namespaces, but this is outside the scope of this room.
+- Bucket names are globally unique, are created, and live in a specific AWS Region. Amazon also introduced [Account Regional namespaces](https://aws.amazon.com/blogs/aws/introducing-account-regional-namespaces-for-amazon-s3-general-purpose-buckets/), but this is outside the scope of this room.
 - Objects stored in buckets stay in that Region unless you explicitly replicate them (cross-region replication).
 - Objects are any files stored in S3 (images, log files, backups), and they can be up to 5 TB in size.
 - Buckets have an inherent flat structure; the "folder" illusion is given by the key prefix (e.g., logs/2026/january/access.log).
@@ -78,7 +78,7 @@ AWS S3 uses buckets, which are containers for storing objects. Here are a couple
 S3 access is controlled through a few mechanisms. The most common ones you will see:
 
 - **Bucket Policies** - JSON policies attached to buckets that define who can access what.
-- **Block Public Access** - Account-level and bucket-level setting that overwrites any policy or  ACL that would make the bucket public.
+- **Block Public Access** - Account-level and bucket-level setting that overwrites any policy or ACL that would make the bucket public.
 - **Access Control Lists (ACLs)** - Legacy mechanism for granting access.
 
 **Security Best Practices**
@@ -99,15 +99,15 @@ Let us explore the lab environment. A bucket has been provisioned in the lab env
 
 1. Navigate to the S3 service.
 
-!Navigate to the S3 service
+![Navigate to the S3 service](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771925800412.png)
 
-2. Identify the lab bucket and look at the details.
+1. Identify the lab bucket and look at the details.
 
-!Identify the lab bucket and look at the details.
+![Identify the lab bucket and look at the details.](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771925800752.png)
 
 **Note:** To become more comfortable with the CLI, commands will be used more frequently in place of UI steps.
 
-3. Open `CloudShell` (or configure and use AWS CLI in the Attack Box) and list all buckets in the account.
+1. Open `CloudShell` (or configure and use AWS CLI in the Attack Box) and list all buckets in the account.
 
 ```bash
            $ aws s3 ls
@@ -115,7 +115,7 @@ Let us explore the lab environment. A bucket has been provisioned in the lab env
 2026-02-23 08:56:04 storage-lab-957207444373
 ```
 
-4. Note down the bucket name, replace it in the command, and list the contents of the lab bucket.
+1. Note down the bucket name, replace it in the command, and list the contents of the lab bucket.
 
 ```bash
            $ aws s3 ls s3://storage-lab-957207444373
@@ -124,7 +124,7 @@ Let us explore the lab environment. A bucket has been provisioned in the lab env
                            PRE logs/
 ```
 
-5. List the objects inside `logs/`.
+1. List the objects inside `logs/`.
 
 ```bash
            $ aws s3 ls s3://storage-lab-957207444373/logs/
@@ -132,7 +132,7 @@ Let us explore the lab environment. A bucket has been provisioned in the lab env
 2026-02-23 08:56:35         25 access-log.txt
 ```
 
-6. Look at the content of `access-log`.
+1. Look at the content of `access-log`.
 
 ```bash
            $ aws s3 cp s3://storage-lab-957207444373/logs/access-log.txt -
@@ -144,7 +144,7 @@ Let us explore the lab environment. A bucket has been provisioned in the lab env
 
 **Create/Update S3 Objects**
 
-7. Create and upload a file to `data/`.
+1. Create and upload a file to `data/`.
 
 ```bash
            $ echo "No leaky bucket on my watch." > ./my-file.txt
@@ -154,7 +154,7 @@ $ aws s3 cp ./my-file.txt s3://storage-lab-957207444373/data/
 upload: ./my-file.txt to s3://storage-lab-957207444373/data/my-file.txt
 ```
 
-8. Verify that the upload was successful.
+1. Verify that the upload was successful.
 
 ```bash
            $ aws s3 ls s3://storage-lab-957207444373/data/
@@ -163,7 +163,7 @@ upload: ./my-file.txt to s3://storage-lab-957207444373/data/my-file.txt
 2026-02-23 08:56:35         43 readme.txt
 ```
 
-9. Lastly, let us do some security work. Check the Public Access of the bucket
+1. Lastly, let us do some security work. Check the Public Access of the bucket
 
 ```bash
            $ aws s3api get-public-access-block --bucket storage-lab-957207444373
@@ -185,12 +185,12 @@ We can see the bucket is not publicly exposed, which is good. Excellent work.
 > What access control method should you use in favor of ACLs?
 > 
 
- bucket policy
+bucket policy
 
 > What is the flag found in access-log.txt?
 > 
 
- THM{NO_PUBLIC_S3}
+THM{NO_PUBLIC_S3}
 
 ### Task 4 - Elastic Block Store
 
@@ -230,13 +230,13 @@ The lab environment has an EC2 instance with an additional EBS volume attached.
 
 1. Navigate to the EC2 service and identify the lab instance.
 
-!Navigate to the EC2 service and identify the lab instance.
+![Navigate to the EC2 service and identify the lab instance.](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771927016144.png)
 
-2. Navigate to the Volumes dashboard and identify the volume's details.
+1. Navigate to the Volumes dashboard and identify the volume's details.
 
-!Identify EC2 volume details.
+![Identify EC2 volume details.](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771927965244.png)
 
-3. Using `CloudShell` (or configure AWS CLI on the Attack Box), list all volumes in the account.
+1. Using `CloudShell` (or configure AWS CLI on the Attack Box), list all volumes in the account.
 
 ```bash
            $ aws ec2 describe-volumes --query "Volumes[*].{ID:VolumeId,Size:Size,Type:VolumeType,State:State,AZ:AvailabilityZone,Encrypted:Encrypted}" --output table
@@ -251,9 +251,7 @@ The lab environment has an EC2 instance with an additional EBS volume attached.
 +------------+------------+-------------------------+-------+---------+--------+
 ```
 
-4. Look at a specific volume. You will have to replace the volume ID with the appropriate one.
-
-[](https://cdn-images.tryhackme.com/room-icons/68d2c1e7ab94268f6271de1d-1771765213861)
+1. Look at a specific volume. You will have to replace the volume ID with the appropriate one.
 
 **Note:** Usually, the encrypted volume is the EBS we will be looking at.
 
@@ -269,7 +267,7 @@ The lab environment has an EC2 instance with an additional EBS volume attached.
 +------------+-----------------------+-----------+
 ```
 
-5. Check if the account contains any snapshots.
+1. Check if the account contains any snapshots.
 
 ```bash
            $ aws ec2 describe-snapshots --owner-ids self --query "Snapshots[*].{ID:SnapshotId,VolumeId:VolumeId,Size:VolumeSize,State:State,Encrypted:Encrypted}" --output table
@@ -283,9 +281,7 @@ The lab environment has an EC2 instance with an additional EBS volume attached.
 +-----------+--------------------------+-------+------------+-------------------------+
 ```
 
-6. Connect to the EC2 instance and identify the mounted Volume.
-
-[](https://cdn-images.tryhackme.com/room-icons/68d2c1e7ab94268f6271de1d-1771765213861)
+1. Connect to the EC2 instance and identify the mounted Volume.
 
 **Note:** You will connect from either `CloudShell` or AWS CLI using SSM and replace the instance ID in the command. You can skip this step if you connected via the Console.
 
@@ -305,7 +301,7 @@ xvdf      202:80   0    5G  0 disk /mnt/data
 zram0     253:0    0  458M  0 disk [SWAP]
 ```
 
-7. Look for the `flag.txt` on the mounted volume.
+1. Look for the `flag.txt` on the mounted volume.
 
 ```bash
            sh-5.2$ ls /mnt/data
@@ -369,15 +365,13 @@ In this hands-on exercise, you will explore a preconfigured EFS file system.
 
 1. Navigate to the EFS service.
 
-!Navigate to the EFS service.
+![Navigate to the EFS service.](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771929521643.png)
 
-2. Identify the lab file system and review its details.
+1. Identify the lab file system and review its details.
 
-!Identify the lab EFS
+![Identify the lab EFS](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1771929521745.png)
 
-3. Using `CloudShell` (or configure AWS CLI on the Attack Box), list the EFS file systems.
-
-[](https://cdn-images.tryhackme.com/room-icons/68d2c1e7ab94268f6271de1d-1771765213861)
+1. Using `CloudShell` (or configure AWS CLI on the Attack Box), list the EFS file systems.
 
 **Note:** Make sure you `exit` the SSM session if still connected. In `CloudShell`, you can open another tab by clicking the plus sign next to the current session's tab.
 
@@ -393,9 +387,7 @@ In this hands-on exercise, you will explore a preconfigured EFS file system.
 +-----------+------------------------+------------------+-------+-------------+
 ```
 
-4. Identify the mount targets.
-
-[](https://cdn-images.tryhackme.com/room-icons/68d2c1e7ab94268f6271de1d-1771765213861)
+1. Identify the mount targets.
 
 **Note:** Replace the file system ID with the one identified above.
 
@@ -411,7 +403,7 @@ In this hands-on exercise, you will explore a preconfigured EFS file system.
 +------------+--------------------------+-------------+----------------------------+
 ```
 
-5. Now, connect to the EC2 instance (or use the session from the previous task) and explore the mounted EFS, under `/mnt/shared`. The first command will show that the EFS is mounted.
+1. Now, connect to the EC2 instance (or use the session from the previous task) and explore the mounted EFS, under `/mnt/shared`. The first command will show that the EFS is mounted.
 
 ```bash
            sh-5.2$ df -h
@@ -446,8 +438,6 @@ THM{SHARING_IS_CARING}
 ```jsx
 ~ $ aws ec2 describe-instances --query "Reservations[*].Instances[*].{InstanceId:InstanceId,State:State.Name,Name:Tags[?Key=='Name']|[0].Value}" --output table
 ```
-
-!image.png
 
 ### Task 6 - Conclusion
 

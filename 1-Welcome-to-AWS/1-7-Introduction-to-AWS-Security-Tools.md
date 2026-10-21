@@ -1,4 +1,4 @@
-# AWS 1.7. Introduction to AWS Security Tools
+# AWS Security 1.7. Introduction to AWS Security Tools
 
 ### Task 1 - Introduction
 

@@ -1,4 +1,4 @@
-# AWS 2.1. The Over-Privileged User
+# AWS Security 2.1. The Over-Privileged User
 
 ### Task 1 - Introduction
 

@@ -1,4 +1,4 @@
-# AWS 1.1. First Steps Into AWS
+# AWS Security 1.1. First Steps Into AWS
 
 ### Task 1 - Introduction
 

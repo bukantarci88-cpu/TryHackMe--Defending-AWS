@@ -1,172 +1,236 @@
-# TryHackMe - AWS IAM Writeup
+# AWS 1-3-Introduction-to-IAM
 
-> **Platform:** TryHackMe  
-> **Room:** AWS IAM  
-> **Repository:** Defending AWS  
-> **Category:** AWS Security | IAM | Identity Management | Access Control | Least Privilege
+### Task 1 - Introduction
 
----
+Security starts and ends with Identity and Access Management. AWS is no different, and throughout this room, you will learn the foundational concepts on which to build your AWS knowledge and understanding further.
 
-## Overview
+**Learning Objectives**
 
-Identity and Access Management (IAM) is a core part of AWS security. It controls who can access AWS resources, which actions they can perform, and under what conditions access is allowed.
+- AWS IAM identities and when to use them
+- IAM policies 101
+- Common AWS credential types
+- The principle of least privilege
 
-This write-up covers IAM identities, policy types and structure, policy evaluation, credential security, and the Principle of Least Privilege (PoLP). It also records the practical exercises and answers from the room.
+### Task 2 - IAM Identities
 
-## Learning Objectives
+AWS identities are entities within the AWS IAM service that are authenticated to access resources based on their assigned permissions. You will encounter the following types:
 
-- Understand AWS IAM identities and when to use them.
-- Recognize common IAM policy types and how permissions are evaluated.
-- Read the structure of a JSON IAM policy.
-- Identify common AWS credential types and protect them.
-- Apply the Principle of Least Privilege.
+- **Root User** - this is the identity created with an AWS account and has full access to all resources.
+- **IAM User** - people/applications with permanent credentials (password, access keys).
+- **IAM Group** - a collection of users with the main purpose of easily managing permissions for multiple users.
+- **IAM Role** - identities with no permanent credentials, which provide a more flexible way to assign temporary access.
 
----
+**Security Best Practices**
 
-## Task 1 - Introduction
+- Do not use the root user for day-to-day activities. Lock it down with MFA and a strong password and store it away.
+- Human users should be assigned IAM users, but ideally, a federated authentication method, such as SSO, should handle authentication.
+- Groups are a great way to manage permissions.
+- For AWS services (e.g., EC2, Lambda), roles are better suited.
 
-Security starts and ends with Identity and Access Management. AWS is no different: IAM provides the foundational concepts for controlling access to AWS resources.
+**Practical Exercise**
 
-## Task 2 - IAM Identities
+You can dive right in and start by exploring the lab environment. So, generate a lab and log in to the AWS Console with the provided credentials.
 
-AWS identities are entities within IAM that are authenticated to access resources based on their assigned permissions.
+**Info:** To start the AWS environment, click the `Cloud Details` button at the top of the room, then click `Generate Environment`. When the environment is ready, use the Credentials tab to navigate to the AWS Console and log in. In the AWS web interface, you can find the users, groups, roles, and policies under the IAM service.
 
-### Identity Types
+1. Search for the IAM service.
 
-| Identity | Description |
-|---|---|
-| **Root user** | The identity created with an AWS account. It has full access to all resources. |
-| **IAM user** | A person or application identity that can have long-term credentials, such as a password or access keys. |
-| **IAM group** | A collection of IAM users used to manage permissions for multiple users more easily. |
-| **IAM role** | An identity that provides temporary credentials and a flexible way to grant access without relying on permanent credentials. |
+![Search for IAM](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769702323773.png)
 
-### Security Best Practices
+1. And, on the left side, you should see the links.
 
-- Do not use the root user for everyday activities. Protect it with MFA and a strong password.
-- For human users, prefer federated authentication such as single sign-on (SSO) where possible.
-- Use groups to manage permissions for users consistently.
-- Use IAM roles for AWS services such as EC2 and Lambda.
-- Review identities and their assigned permissions regularly.
+![On the left side of the IAM dashboard, you can find the users, groups, roles, and policies links.](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1779961501630.png)
 
-### Practical Exercise: Explore IAM
+1. To find out details about your user (ARN, permissions, groups, etc.) or set up different capabilities (e.g., MFA, Access Keys, etc.), you can navigate to IAM Users and select your username. By default, in labs, this is the account ID.
 
-In the lab, generate the environment, sign in to the AWS Console using the provided credentials, and open **IAM**. Explore **Users**, **Groups**, **Roles**, and **Policies**.
+![Find your user](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769772991046.png)
 
-You can inspect a user's ARN, permissions, group membership, MFA configuration, and access keys by selecting the user in **IAM → Users**.
+As we dive deeper into AWS, it is useful to become comfortable with the CLI.
 
-The AWS CLI can also be used to list identities. Run commands from CloudShell or a configured AWS CLI profile, ensuring you are using the correct account and region.
+So, as an alternative to the Console UI, you can run the following commands from either CloudShell (make sure you are in the right region/account) or AWS CLI (make sure you have the default profile configured).
+
+1. List account users:
 
 ```bash
-# List IAM users
-aws iam list-users
+           $ aws iam list-users   #IAM Identities
 
-# List IAM groups
-aws iam list-groups
+{
+    "Users": [
+        {
+            "Path": "/",
+            "UserName": "060795900697",
+            "UserId": "AIDAQ4J5X2MM2R67SDNAN",
+            "Arn": "arn:aws:iam::060795900697:user/060795900697",
+            "CreateDate": "2026-01-15T07:48:32+00:00",
+            "PasswordLastUsed": "2026-01-30T11:32:38+00:00"
+        }
+    ]
+}
 ```
 
-### Room Answer
+1. List account groups:
 
-**Question:** What are the names of the groups the provided user belongs to, listed alphabetically?
+```bash
+           $ aws iam list-groups #IAM Identities
 
-**Answer:** `AWS103`, `LabReadOnly`
-
----
-
-## Task 3 - Understanding Policies
-
-IAM policies are JSON documents that define permissions. They specify which actions are allowed or denied, which resources the rules apply to, and any conditions that must be met.
-
-### Policy Types
-
-| Policy type | Purpose |
-|---|---|
-| **Identity-based policy** | The most common policy type; attached to IAM users, groups, or roles. |
-| **Resource-based policy** | Attached to a resource, such as an S3 bucket policy. |
-| **Permissions boundary** | Defines the maximum permissions that an identity-based policy can grant to a user or role. |
-| **Service control policy (SCP)** | AWS Organizations guardrail that sets permissions limits for accounts, organizational units (OUs), or an organization. |
-| **Session policy** | Limits permissions for a specific session, such as a programmatic role-assumption session. |
-
-### Request Context: PARC
-
-Before evaluating an access request, AWS gathers contextual information remembered by the mnemonic **PARC**:
-
-- **P — Principal:** Who is making the request?
-- **A — Action:** What operation is being requested?
-- **R — Resource:** Which resource is being accessed?
-- **C — Condition:** What contextual conditions apply?
-
-### Permission Evaluation Concepts
-
-- **Explicit deny:** An explicit deny overrides an allow.
-- **Permissions boundaries:** These constrain the maximum permissions available to an identity.
-- **Allow:** An action must be allowed by the applicable permissions and not blocked by a restriction.
-- **Default deny:** If no applicable policy explicitly allows an action, access is denied by default.
-
-### Security Best Practices
-
-- Prefer IAM roles for applications and AWS services.
-- Avoid overly broad, catch-all policies.
-- Use explicit deny statements for important guardrails where appropriate.
-- Grant regular users only the access needed for their daily tasks; use controlled role elevation for additional access, ideally with MFA.
-- Assign workloads dedicated roles with service-specific permissions.
-- Review policies regularly.
-
-### Room Answers
-
-**Question:** Which policy type is the most common?
-
-**Answer:** `Identity-based`
-
-**Question:** What contextual information does AWS gather before evaluating a request, in mnemonic order?
-
-**Answer:** `Principal, Action, Resource, Condition`
-
-**Question:** Name one security best practice for a regular user.
-
-**Answer:** `MFA`
-
----
-
-## Task 4 - Policy Structure
-
-An IAM policy is a JSON document. Its main components define the policy language version and one or more statements describing access permissions.
-
-### Main Components
-
-| Component | Description |
-|---|---|
-| `Version` | Specifies the policy language version. The notes use `2012-10-17`. |
-| `Statement` | The main required section containing one or more policy statements. |
-| `Sid` | Optional statement identifier or short description. |
-| `Effect` | Required; specifies `Allow` or `Deny` (case-sensitive). |
-| `Principal` | Specifies the account, user, role, or other principal to which a statement applies when required by the policy type. |
-| `Action` | The AWS API actions covered by the statement. |
-| `Resource` | The resource or resources covered by the statement. |
-| `Condition` | Optional conditions that determine when the statement applies. |
-
-### Example 1: S3 Access
-
-The room provides the following example policy:
-
-```json
 {
+    "Groups": [
+        {
+            "Path": "/",
+            "GroupName": "[REDACTED]",
+            "GroupId": "AGPAQ4J5X2MM32EYCG4WS",
+            "Arn": "arn:aws:iam::060795900697:group/[REDACTED]",
+            "CreateDate": "2026-01-30T11:29:25+00:00"
+        },
+        {
+            "Path": "/",
+            "GroupName": "[REDACTED]",
+            "GroupId": "AGPAQ4J5X2MM7SCLPSYWR",
+            "Arn": "arn:aws:iam::060795900697:group/[REDACTED]",
+            "CreateDate": "2026-01-15T07:48:32+00:00"
+        },
+        {
+            "Path": "/",
+            "GroupName": "[REDACTED]",
+            "GroupId": "AGPAQ4J5X2MM5EBBEIXYU",
+            "Arn": "arn:aws:iam::060795900697:group/[REDACTED]",
+            "CreateDate": "2026-01-30T11:29:23+00:00"
+        }
+    ]
+}
+```
+
+**Answer the questions below**
+
+> What is the name of the groups your user is part of (listed alphabetically)?
+> 
+
+AWS103, LabReadOnly
+
+### Task 3 - Understanding Policies
+
+AWS policies have a JSON structure that lets you define permissions, specify allow/deny actions, and set conditions for IAM users, groups, or roles.
+
+**Policy Types**
+
+- **Identity-based policy** - the most common type; it applies to users, groups, or roles.
+- **Resource-based policy** - attached to resources (e.g., S3 bucket policy).
+- **Permissions-boundaries policy** - an advanced IAM feature that defines the maximum extent of permissions a policy can grant.
+- **Service control policy** - a feature of the AWS Organizations service, its main purpose being to provide uniform security guardrails across an organization (accounts, OUs, whole organization).
+- **Session policy** - similar to Permissions-boundaries but limited to a specific session during programmatic role assumption.
+
+**Permissions Evaluation**
+
+Before we dive into the evaluation logic, it's worth noting that AWS compiles a request context before evaluating an access request. This can be easily remembered as PARC (Principal, Action, Resource, Condition). This is especially useful when troubleshooting access issues.
+
+An access request goes through a policy evaluation logic that results in an allow or deny decision. The core logic in the evaluation goes as follows:
+
+1. **Explicit Deny** - if any policy explicitly denies a request, the evaluation is stopped, and the resulting decision is deny. Deny always overrides an allow.
+2. **Permission Boundary Evaluation** - Permission boundaries act as constraints, and AWS checks if a user or role has a permission boundary policy attached.
+3. **IAM Policies** evaluation of all relevant policies attached to a user or role.
+4. **Allow** - if the action is explicitly allowed in at least one policy and not restricted by any of the above, then the resulting decision is allow.
+5. **Default Deny** - if none of the policies or permission boundaries explicitly allow an action, the default decision is deny.
+
+Regarding policy types, they are evaluated in a specific order.
+
+![AWS Evaluation Logic](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1781258873346.png)
+
+**Security Best Practices**
+
+In many security architectures, policies are the backbone on which you layer security measures. As such, it is wise to spend more time understanding how they work and practice as much as you can in a sandbox environment. When it comes to AWS identities and policies, here are a couple of strong recommendations to get things going:
+
+- For applications and services, lean towards IAM Roles.
+- Avoid "catch-all" policies where permissions are too broad.
+- Use explicit denials on "must never happen" actions or situations.
+- For regular users, provide only the minimal access needed for day-to-day tasks and elevate access via a controlled role, ideally requiring MFA.
+- Workloads can have dedicated roles with service-specific permissions.
+- Regularly review policies.
+
+**Answer the questions below**
+
+> Which policy type is the most common?
+> 
+
+Identity-based
+
+> What contextual information does AWS gather before evaluating a request (mnemonic reference order)?
+> 
+
+Principal,Action,Resource,Condition
+
+> For a regular user, name one security best practice you should apply?
+> 
+
+MFA
+
+### Task 4 - Policy Structure
+
+We saw the logic in evaluating a policy. Now, let us understand what it is made of.
+
+The backbone of any policy can be structured as follows:
+
+- **Version** - specifies the language syntax rules for processing a policy. The latest version is `2012-10-17`, but you should always check if a newer version is available.
+- **Statement** - the main and mandatory part of a policy, where you define one or more elements that will be processed during the policy evaluation. The usual components of an element are:
+    - **Sid** - optional field, usually used as a short description of the element.
+    - **Effect** - required field which specifies the result of the element. Value is case-sensitive and can either be `Allow` or `Deny`.
+    - **Principal** - required in some circumstances, specifies the account, user, or role to which the statement applies.
+    - **Action** - each AWS service includes a set of actions you can perform, and here you specify which actions the statement applies to.
+    - **Resource** - define the object or objects the statement applies to.
+    - **Condition** - optionally, you can specify the logic under which the statement applies.
+
+**Policy Example**
+
+```bash
+           {
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "trylabS3Access",
+			"Effect": "Allow",
+			"Action": [
+				"s3:ListBucket",
+				"s3:ListBucketVersions",
+				"s3:GetObject",
+				"s3:PutObject"
+			],
+			"Resource": [
+				"arn:aws:s3:::thm-bucket/*"
+			],
+			"Condition": {
+				"ArnLike": {
+					"aws:PrincipalArn": "arn:aws:iam::111122223333:user/trylab"
+				}
+			}
+		}
+	]
+}
+```
+
+Identify the main components and build a narrative of what is going on. Something like: "*This policy will allow the trylab user to list, get, or put objects in the thm-bucket resource.*"
+
+Here is another example.
+
+```bash
+           {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "trylabS3Access",
+      "Effect": "Deny",
+      "Action": "ec2:TerminateInstances",
+      "Resource": "*",
+      "Condition": {
+        "ArnNotLike": {
+          "aws:PrincipalArn": "arn:aws:iam::111122223333:user/try-terminate-me"
+        }
+      }
+    },
+    {
       "Effect": "Allow",
-      "Action": [
-        "s3:ListBucket",
-        "s3:ListBucketVersions",
-        "s3:GetObject",
-        "s3:PutObject"
-      ],
-      "Resource": [
-        "arn:aws:s3:::thm-bucket/*"
-      ],
+      "Action": "ec2:TerminateInstances",
+      "Resource": "*",
       "Condition": {
         "ArnLike": {
-          "aws:PrincipalArn": "arn:aws:iam::111122223333:user/trylab"
+          "aws:PrincipalArn": "arn:aws:iam::111122223333:user/try-terminate-me"
         }
       }
     }
@@ -174,128 +238,122 @@ The room provides the following example policy:
 }
 ```
 
-**Narrative:** This statement allows the principal matching the `trylab` user ARN to perform the listed S3 actions when the condition matches. The actions include listing a bucket and its versions, retrieving objects, and uploading objects. The resource in the supplied example is `arn:aws:s3:::thm-bucket/*`.
+**Security Best Practices**
 
-### Example 2: EC2 Termination Guardrail
+When it comes to implementing policies, specific beats general and saves you potential headaches later. Here are a couple of guidelines to get you started when shaping a policy:
 
-The second example contains two statements:
+- List the exact API action needed, for example, `s3:ListBucket`, and steer away from "catch-all" actions like `s3:*`.
+- Scope to exact resources whenever the service supports ARN.
+- Split statements by resource type and required permissions, and use Sid as shorthand descriptions. In this way, policies are more "human-readable" while ensuring they do not overscope access.
+- Use conditions to tighten access instead of adding more permissions, for example, `aws:MultiFactorAuthPresent`, `aws:SourceIp`, `aws:RequestedRegion`.
+- Use explicit Deny only for guardrails.
 
-- A `Deny` statement for `ec2:TerminateInstances` on all resources when the principal ARN does **not** match the `try-terminate-me` user.
-- An `Allow` statement for `ec2:TerminateInstances` on all resources when the principal ARN matches the `try-terminate-me` user.
+The road to shaping a good policy is rarely straightforward, but with good practice and knowledge, it becomes easier.
 
-**Narrative:** The policy denies EC2 instance termination for principals other than `try-terminate-me`. The matching user is allowed by the second statement and is not matched by the first statement's deny condition.
+**Answer the questions below**
 
-### Policy-Writing Best Practices
+> In the first example above, which action allows the trylab user to retrieve objects from the thm-bucket?
+> 
 
-- Specify exact API actions, such as `s3:ListBucket`, instead of broad patterns such as `s3:*`.
-- Scope permissions to exact resources using ARNs wherever supported.
-- Separate statements by resource type and required permissions.
-- Use `Sid` values to make statements easier to understand.
-- Use conditions to restrict access, for example with `aws:MultiFactorAuthPresent`, `aws:SourceIp`, or `aws:RequestedRegion`.
-- Use explicit deny statements as guardrails for actions that must not occur.
+s3:GetObject
 
-### Room Answers
+> In the second example above, when the user try-terminate-me requests an EC2 termination, what will be the result when evaluating the policy?
+> 
 
-**Question:** In the first example, which action lets the `trylab` user retrieve objects from `thm-bucket`?
+Allow
 
-**Answer:** `s3:GetObject`
+### Task 5 - Credentials
 
-**Question:** In the second example, what is the result when `try-terminate-me` requests EC2 termination?
+In AWS, common types of credentials you will see are:
 
-**Answer:** `Allow`
+- **Console Passwords** - this is a user-defined password for the root user or IAM user to access the AWS Management Console.
+- **Access Keys** - long-term programmatic access credentials.
+- **Temporary Credentials** - AWS Security Token Service is a managed service that enables you to request short-lived, limited-privilege credentials.
+- **Role Credentials** - especially used for AWS compute, it provides permissions for compute instances without storing the credentials on disk.
 
----
+**Practical Exercise**
 
-## Task 5 - Credentials
+In this exercise, we will put everything together and create a new user with console credentials and assign it to a "special" group:
 
-AWS credentials are used to authenticate an identity or provide access to AWS services.
+1. Navigate to the `IAM service`, `Users`, and then click `Create User`:
 
-### Common Credential Types
+![Create a new user](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769774061749.png)
 
-| Credential type | Description |
-|---|---|
-| **Console password** | A user-defined password used by the root user or an IAM user to access the AWS Management Console. |
-| **Access keys** | Long-term credentials used for programmatic access. |
-| **Temporary credentials** | Short-lived credentials issued through AWS Security Token Service (STS), which can provide limited permissions. |
-| **Role credentials** | Temporary credentials commonly used by AWS compute services to access resources without storing long-term credentials on disk. |
+1. Fill in the username (e.g., `trylogme`), check the `Provide user [...]` checkbox, and uncheck the `Users must create [...]` checkbox.
 
-### Practical Exercise: Create a User
+![Fill in user details](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769770614851.png)
 
-In the lab:
+1. For the purpose of this exercise, add the user to the LogsReaders group.
 
-1. Open **IAM → Users → Create user**.
-2. Enter a username, such as `trylogme`, and configure console access as directed by the exercise.
-3. Add the user to the `LogsReaders` group.
-4. Review and create the user.
-5. Retrieve the generated credentials when prompted. The lab notes indicate that they are shown only at that stage.
-6. Open an incognito browser window and sign in as the new user using the account ID, username, and password.
-7. Ensure the AWS region is set to `us-east-1`, then explore the resources available to the user.
+![Add user to logsreaders group](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769774059910.png)
 
-### Credential Security Best Practices
+1. Review and create the user.
 
-- Do not create access keys for human users unless there is a clear requirement and the risks are understood.
-- Prefer IAM roles and temporary STS credentials where possible.
-- Rotate or remove long-lived access keys.
-- Require MFA for sensitive operations.
-- Protect credentials and never commit them to a public repository.
+![Create the user](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769774059845.png)
 
-### Room Answers
+1. Make sure you retrieve the credentials (copy/paste or CSV download) as this is the only time they will be shown.
 
-**Question:** What is the prefix of the bucket found in the exercise?
+![Download the credentials](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769774059896.png)
 
-**Answer:** `try-log-me`
+1. In an incognito browser window, log in to the newly created user. Fill in the Account ID, username, and password.
 
-**Question:** What flag is found inside the bucket?
+**Note:** You can retrieve the Account ID from the user who was initially provided.
 
-**Answer:** `THM{MY_SECRET_STASH}`
+![Log in with the new user](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769774059889.png)
 
----
+1. Make sure you are in the `us-east-1` region and do some exploration, see if you find anything interesting.
 
-## Task 6 - The Principle of Least Privilege
+**Security Best Practices**
 
-The **Principle of Least Privilege (PoLP)** means granting only the minimum permissions needed, for the minimum set of resources, for the minimum period of time.
+- Do not generate access keys for humans unless you understand the blast radius.
+- Always favor roles in combination with temporary STS.
+- Rotate or remove long-lived keys.
+- Use MFA for sensitive operations.
 
-### Practical Approaches
+**Answer the questions below**
 
-- Understand the user's or service's actual requirements. A broad request for administrator access may be reducible to a small set of specific actions on defined resources.
-- Start with narrow action/resource combinations and expand only when a legitimate requirement is identified.
-- Avoid wildcards unless their impact is fully understood; narrow permissions wherever possible.
-- Use conditions to further restrict sensitive actions, such as requiring MFA.
+> What is the prefix of the bucket you found?
+> 
 
-### Practical Exercise
+try-log-me
 
-The room presents three examples. For each one, select the option that adheres to the Principle of Least Privilege. After all three examples are completed successfully, the lab provides a flag.
+> If you dig into the bucket, what flag do you find?
+> 
 
-### Room Answer
+THM{MY_SECRET_STASH}
 
-**Question:** What flag is provided after completing all three exercises?
+### Task 6 - The Principle Of Least Privilege
 
-**Answer:** `THM{POLP_IT_DOWN}`
+The Principle of Least Privilege, or PoLP for short, means granting only the minimum set of permissions needed for the minimum resources, for the minimum period of time. Simple in theory but hard to apply.
 
----
+As a set of practical approaches, here are the starting points:
 
-## Task 7 - Conclusion
+- Understand the user or service requirements. More often than not, an "I want admin" statement can be broken down into more specific actions (e.g., create an EC2 instance in region X, put or get objects in a specific bucket).
+- Start with a narrow set of action/resource pairs and build on them.
+- Avoid wildcards ( ) unless you really understand the blast radius; and even then, you should still avoid them.
+- Use conditions to further restrict an action, for example, for sensitive operations, condition MFA to be used.
 
-This room introduces the core components of AWS IAM and the foundations of secure policy design.
+**Practical Exercise**
 
-### Key Takeaways
+Select one option and check whether the solution adheres to the least privilege principle. If a solution is valid, you can advance to the next level.
 
-- IAM policies are a cornerstone of AWS security and should be designed carefully.
-- Applying least privilege helps reduce the impact of common misconfigurations and attack patterns.
-- When designing or troubleshooting permissions, consider **who** is requesting access, **what** action is requested, **which** resource is involved, and **under what conditions**.
-- Credentials provide access to AWS resources and must be protected. Enforce MFA for sensitive operations.
-- Avoid granting broad permissions with the intention of tightening them later.
-- Prefer roles and temporary credentials for workloads, and regularly review permissions and long-lived credentials.
+After successfully completing all three examples, you will receive the flag.
 
----
+**Answer the questions below**
 
-## Skills Practiced
+> What is the flag after finishing all three exercises?
+> 
 
-- AWS IAM identity and group enumeration
-- IAM policy types and JSON structure
-- Access-policy reasoning and permission evaluation
-- AWS CLI basics
-- Credential-management security
-- Least-privilege policy design
+THM{POLP_IT_DOWN}
 
-> **Lab note:** The commands, examples, group names, bucket prefix, and flags above reflect the room notes. Use credentials only in the authorized lab environment, and never publish real account credentials or access keys.
+### Task 7 - Conclusion
+
+In this room, you have looked at the fundamental components of the AWS IAM service and taken your first steps toward defining well-architected, secure policies.
+
+**Key Takeaways**
+
+- Policies are the cornerstone of a good security architecture and should not be treated lightly.
+- Applying the Principle of Least Privilege can mitigate the most common high-impact misconfigurations and attack patterns.
+- Be knowledgeable of the who, what, where, and for how long of an IAM identity when designing or troubleshooting policies.
+- Credentials are the keys to the kingdom, so take good care of them. Even more, for sensitive operations, it is best to enforce MFA.
+- Avoid the "I'll fix it later" pitfall, no matter how many complaints you receive.

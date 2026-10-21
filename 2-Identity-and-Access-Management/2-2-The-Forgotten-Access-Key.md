@@ -1,4 +1,4 @@
-# AWS 2.2. The Forgotten Access Key
+# AWS Security 2.2. The Forgotten Access Key
 
 ### Task 1 - Introduction
 

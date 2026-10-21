@@ -1,4 +1,4 @@
-# AWS 1-3-Introduction-to-IAM
+# AWS Security 1-3-Introduction-to-IAM
 
 ### Task 1 - Introduction
 

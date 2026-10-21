@@ -1,4 +1,4 @@
-# AWS 1.5. Introduction to Cloud Computing
+# AWS Security 1.5. Introduction to Cloud Computing
 
 ### Task 1 - Introduction
 

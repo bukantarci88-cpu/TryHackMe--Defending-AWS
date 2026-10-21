@@ -1,561 +1,283 @@
-# TryHackMe - AWS Cloud Fundamentals Writeup
+# AWS 1.1. First Steps Into AWS
 
-> **Platform:** TryHackMe  
-> **Challenge:** AWS Cloud Fundamentals  
-> **Category:** Cloud Security | AWS | CloudShell | AWS CLI | IAM
+### Task 1 - Introduction
 
----
+In this room, you will get comfortable with how TryHackMe's AWS environment works, how to navigate the AWS Console, and how to run simple commands using CloudShell and AWS CLI.
 
-# Overview
+### Task 2 - TryHackMe AWS Environment Overview
 
-This room introduces the fundamentals of working with **Amazon Web Services (AWS)** through the TryHackMe cloud lab environment.
+Time to start your first practical exercise, so go ahead and set up your environment and log in to your AWS account:
 
-The objective is to become familiar with the AWS Management Console, understand how cloud lab environments work, and execute basic commands using AWS CloudShell and the AWS Command Line Interface (CLI).
+1. Open the `Cloud Details` window.
+2. Click `Generate Environment` to provision a lab environment.
+3. Once the environment state is `Ready`, click the `Credentials` tab.
+4. Open the AWS Console link. This should put you in the `us-east-1` region after logging in.
+5. Use the provided Username and Console Password to log in.
 
-Unlike traditional penetration testing challenges, this room focuses on **cloud administration, identity verification, credential configuration, and AWS service enumeration**.
+**Answer the questions below**
 
-These skills provide a foundation for cloud security monitoring, IAM security assessments, cloud incident response, and identifying misconfigurations in AWS environments.
+> After you log in, what is the name of the account?
+> 
 
----
+LabRoom (Check the top-right corner)
 
-# AWS Environment Setup
+### Task 3 - AWS Web Interface Overview
 
-The first step is provisioning the AWS lab environment provided by TryHackMe.
+Services Search
 
-The environment can be started through the Cloud Details interface.
+![Search bar layout](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1768817334117.png)
 
-### Environment Initialization
+Region Selection
 
-1. Open the Cloud Details window.
-2. Click **Generate Environment** to provision the AWS lab.
-3. Wait until the environment state becomes `Ready`.
-4. Open the **Credentials** tab.
-5. Launch the AWS Console using the provided link.
-6. Log in using the supplied credentials.
+![Select region from top-right](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769582250751.png)
 
-After logging in, the AWS account name is displayed in the top-right corner of the console.
+Account Menu
 
-```text
-Account Name: LabRoom
-```
+![Showing account options](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769582250636.png)
 
-This confirms that the lab environment is accessible.
+CloudShell
 
-**Key takeaway:** Always verify the active AWS account before performing administrative or security-related operations.
+![CloudShell at the top](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1768817334679.png)
 
----
+**Answer the questions below**
 
-# AWS Management Console Overview
+> What is the default region TryHackMe usually deploys lab environments in?
+> 
 
-The AWS Management Console provides a web-based interface for accessing and managing cloud services.
-
-Several interface components are particularly important when working with AWS.
-
-### Services Search
-
-The service search feature allows users to locate AWS services such as:
-
-* Amazon EC2
-* Amazon S3
-* AWS Identity and Access Management (IAM)
-* AWS CloudShell
-* AWS CloudTrail
-
-### Region Selection
-
-AWS resources are distributed across geographical regions. The selected region determines which regional resources are displayed and where many operations are executed.
-
-The default region used by the TryHackMe lab in this exercise is:
-
-```text
 us-east-1
-```
 
-This corresponds to the US East (N. Virginia) region.
+### Task 4 - AWS CloudShell Overview
 
-### Account Menu
+CloudShell is a terminal that runs directly in your AWS account session, in the browser. It is already authenticated with your AWS Console login credentials.
 
-The account menu provides access to account-related information and identity details.
+CloudShell is a great way to do quick checks without installing anything locally. Using the AWS web interface is okay, but for a professional user, being comfortable with CLI commands (either CloudShell or AWS CLI) speeds up deployments and troubleshooting.
 
-### CloudShell
+**Practical Exercise**
 
-CloudShell provides a browser-based terminal for interacting with AWS services without installing the CLI locally.
+1. Open CloudShell from the Console
 
-**Key takeaway:** Understanding the console interface, active account, and selected region helps prevent mistakes when managing cloud resources.
+![CloudShell loading screen](https://cdn-images.tryhackme.com/user-uploads/68baea2454c82afe90fd7020/room-content/68baea2454c82afe90fd7020-1769587811596.png)
 
----
-
-# AWS CloudShell
-
-AWS CloudShell is a browser-based command-line environment integrated with the AWS Management Console.
-
-It allows users to execute AWS CLI commands using the credentials available to the active session.
-
-This is useful for quick administrative checks, troubleshooting, resource enumeration, and security investigations.
-
-## Verifying the Current AWS Identity
-
-The first command executed in CloudShell is:
+1. Run your first command. This is the equivalent of `whoami` from Linux and will quickly help you get your bearings, especially when assuming roles and creating sessions.
 
 ```bash
-aws sts get-caller-identity
-```
+           $ aws sts get-caller-identity
 
-This command queries AWS Security Token Service (STS) to identify the caller making the request.
-
-Example output:
-
-```json
 {
-    "UserId": "EXAMPLE_USER_ID",
-    "Account": "123456789012",
-    "Arn": "arn:aws:iam::123456789012:user/example-user"
+    "[REDACTED]": "AIDAQ6YNVVZIMRSN4NKG2",
+    "[REDACTED]": "158878467779",
+    "[REDACTED]": "arn:aws:iam::158878467779:user/158878467779"
 }
 ```
 
-The response contains three important fields.
-
-| Field | Description |
-|---|---|
-| `UserId` | Identifier of the calling identity |
-| `Account` | AWS account ID |
-| `Arn` | Amazon Resource Name identifying the caller |
-
-The command serves a similar purpose to `whoami` on Linux, although it returns additional account and identity information.
-
-## Checking the AWS CLI Configuration
-
-The following command displays the effective CLI configuration:
+1. Then run the following command, which will show the profile information.
 
 ```bash
-aws configure list
+           $ aws configure list
+
+NAME       : VALUE                    : TYPE             : LOCATION
+profile    : <not set>                : None             : None
+access_key : ****************MOHZ     : container-role   :
+secret_key : ****************fA0f     : container-role   :
+region     : us-east-1                : env              : ['AWS_REGION', 'AWS_DEFAULT_REGION']
 ```
 
-The output can include:
-
-```text
-NAME       : VALUE
-profile    : <not set>
-access_key : ****************EXAMPLE
-secret_key : ****************EXAMPLE
-region     : us-east-1
-```
-
-CloudShell can obtain credentials from its execution environment, so manually configuring access keys is not necessarily required.
-
-## Checking the Current Region
-
-The current region can be checked using an environment variable:
+1. A quick way to check which region CloudShell is using is by running either of the following commands:
 
 ```bash
-echo $AWS_DEFAULT_REGION
-```
+           $ aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]'
 
-Example output:
+us-east-1
 
-```text
+### OR ###$ echo $AWS_DEFAULT_REGION
+
 us-east-1
 ```
 
-Alternatively, AWS CLI can query the region associated with an availability zone:
+**Answer the questions below**
+
+> What key names do you see when running the AWS equivalent of the `whoami` command?
+> 
+
+Account,Arn,UserId
+
+```jsx
+~ $ aws sts get-caller-identity
+{
+"UserId": "AIDAUXMPGGCXZTXMEB6U3",
+"Account": "325107200175",
+"Arn": "arn:aws:iam::325107200175:user/325107200175"
+```
+
+### Task 5 - AWS CLI Setup
+
+1. Open a terminal and check that AWS CLI is installed.
 
 ```bash
-aws ec2 describe-availability-zones \
-  --output text \
-  --query 'AvailabilityZones[0].[RegionName]'
+           $ aws --version
+
+aws-cli/2.31.20 Python/3.13.7 Linux/6.17.0-8-generic exe/aarch64.ubuntu.25
 ```
 
-**Key takeaway:** CloudShell provides a convenient way to verify identity, inspect configuration, and interact with AWS services directly from the browser.
-
----
-
-# AWS CLI Installation and Configuration
-
-The AWS Command Line Interface allows users to manage AWS resources from a terminal.
-
-Before using it locally, the installation can be verified with:
+1. Run the `aws configure` command.
 
 ```bash
-aws --version
+           $ aws configure
+
+AWS Access Key ID [None]: ****************I4OF
+AWS Secret Access Key [None]: ****************AmgN
+Default region name [None]: us-east-1
+Default output format [None]: json
 ```
 
-Example output:
-
-```text
-aws-cli/2.x.x Python/3.x.x Linux
-```
-
-The exact version depends on the installed environment.
-
-## Configuring AWS CLI
-
-The interactive configuration command is:
+1. Verify configuration.
 
 ```bash
-aws configure
+           $ aws configure list
+
+      Name                    Value             Type    Location
+      ----                    -----             ----    --------
+   profile                <not set>             None    None
+access_key     ****************I4OF shared-credentials-file
+secret_key     ****************AmgN shared-credentials-file
+    region                us-east-1      config-file    ~/.aws/config$ aws sts get-caller-identity
+
+{
+    "UserId": "AIDAR6DQWN2T7L2ZLYOS3",
+    "Account": "158878467779",
+    "Arn": "arn:aws:iam::158878467779:user/158878467779"
+}
 ```
 
-It prompts for four values:
+**Profiles And Environment Variables**
 
-```text
-AWS Access Key ID
-AWS Secret Access Key
-Default region name
-Default output format
-```
+When you first run the `aws configure` command and set up the credentials, they are automatically saved as a default profile.
 
-Example configuration:
+**Note:** MS Windows stores the credentials and config file in `C:\Users\USERNAME\.aws\`.
 
-```text
-Default region name: us-east-1
-Default output format: json
-```
+| **Information** | **Local Profile Files** | **Environment Variables** |
+| --- | --- | --- |
+| **Files** | • `~/.aws/credentials` - stores keys/credentials/session tokens |  |
+| • `~/.aws/config` - stores profile settings (region, output) | • `~/.bashrc` |  |
+| **Common Layout** | • Credentials file: [default] or [<<profile-name>>] |  |
+| • Config file: [default] or [profile <<profile-name>>] | • `export AWS_ACCESS_KEY_ID="AKIA..."` |  |
+| • `export AWS_SECRET_ACCESS_KEY="..."` |  |  |
+| • `export AWS_SESSION_TOKEN="..."` |  |  |
+| • `export AWS_DEFAULT_REGION="us-east-1"` |  |  |
+| **Commands** | • `aws configure set aws_access_key_id "AKIA..." --profile thm` |  |
+| • `aws configure set aws_secret_access_key "..." --profile thm` |  |  |
+| • `aws configure set aws_session_token "..." --profile thm` |  |  |
+| • `aws configure set region "us-east-1" --profile thm` | • `export AWS_ACCESS_KEY_ID="AKIA..."` |  |
+| • `export AWS_SECRET_ACCESS_KEY="..."` |  |  |
+| • `export AWS_SESSION_TOKEN="..."` |  |  |
+| • `export AWS_DEFAULT_REGION="us-east-1"` |  |  |
+| **Usage** | • `aws sts get-caller-identity --profile thm` | • `aws sts get-caller-identity` |
+| **Comments** | AWS CLI configuration files are more flexible and provide a way to easily switch context by appending the `--profile <<profile-name>>` parameter to commands. | A bit messy, hard to set up, and hard to use. The current profile is always overwritten if you update the environment variables. |
 
-After configuration, the settings can be verified:
+An example of typical credentials and configuration files is shown below.
+
+Credentials File
 
 ```bash
-aws configure list
-```
-
-The current identity can then be confirmed:
-
-```bash
-aws sts get-caller-identity
-```
-
-This helps establish which identity and AWS account the CLI is using.
-
-**Security note:** Never publish real access keys, secret keys, session tokens, or unredacted AWS configuration files in a public GitHub repository. Use temporary credentials or IAM roles where appropriate.
-
----
-
-# AWS CLI Profiles and Environment Variables
-
-AWS CLI supports multiple configuration methods, allowing users to work with different accounts and environments.
-
-Understanding these methods is important when switching between lab, development, and production accounts.
-
-## AWS Configuration Files
-
-The two main configuration files are:
-
-```text
-~/.aws/credentials
-~/.aws/config
-```
-
-The credentials file stores authentication credentials, while the config file stores settings such as regions and output formats.
-
-Example credentials file:
-
-```ini
-[default]
-aws_access_key_id = EXAMPLE_ACCESS_KEY
-aws_secret_access_key = EXAMPLE_SECRET_KEY
+           [default]
+aws_access_key_id=AKIAIOSFODNN7EXAMPLE
+aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPEXAMPLEKEY
+aws_session_token = IQoJb3JpZ2luX2IVERYLONGSTRINGEXAMPLE
 
 [thm-user]
-aws_access_key_id = EXAMPLE_ACCESS_KEY
-aws_secret_access_key = EXAMPLE_SECRET_KEY
+aws_access_key_id=AKIAI44QH8DHBEXAMPLE
+aws_secret_access_key=je7MtGbClwBF/2Zp9Utk/h3yEXAMPLEKEY
+aws_session_token = fcZib3JpZ2luX2IVERYLONGSTRINGEXAMPLE
 ```
 
-Example config file:
+Config File
 
-```ini
-[default]
-region = us-east-1
-output = json
+```bash
+           [default]
+region=us-east-1
+output=json
 
 [profile thm-user]
-region = eu-west-1
-output = text
+region=eu-west-1
+output=text
 ```
 
-These are illustrative examples, not working credentials.
+**Configurations Priority Rules**
 
-## Using a Named Profile
+1. Environment variables.
+2. Explicit profile flag (`profile <<profile-name>>`).
+3. `AWS_PROFILE` environment variables.
+4. Default profile in `~/.aws/credentials + ~/.aws/config`.
 
-A named profile can be selected with the `--profile` parameter.
+### Task 6 - AWS CLI Commands Structure
+
+AWS CLI commands might seem daunting at first, but they have a consistent baseline structure:
+
+`aws <service> <operation> [--parameters] [--region <region>] [--output <format>]`
+
+- `<service>` - the target service for the command (e.g., ec2, s3, sts)
+- `<operation>` - the operation to apply to the specified service (e.g., attach-volume, allocate-address)
+- `[--parameters]` - each operation has specific parameters which can be set (e.g., domain, address, tag, region)
+- `[--region]` - overwrites the default profile region and runs the command in the specified region
+- `[--output]` - the format of the resulting output (e.g., text, JSON, table)
 
 ```bash
-aws sts get-caller-identity --profile thm-user
+           $ aws ec2 describe-regions --query "Regions[].RegionName" --output text
+
+ap-south-1      eu-north-1      eu-west-3       eu-west-2       eu-west-1
+ap-northeast-3  ap-northeast-2  ap-northeast-1  ca-central-1    sa-east-1
+ap-southeast-1  ap-southeast-2  eu-central-1    us-east-1       us-east-2
+us-west-1       us-west-2
 ```
 
-This allows commands to run using the selected profile's configuration and credentials.
-
-## Using Environment Variables
-
-AWS CLI can also obtain configuration values from environment variables.
+AWS CLI Terminal
 
 ```bash
-export AWS_DEFAULT_REGION="us-east-1"
-```
+           $ aws iam list-groups
 
-Authentication-related variables can include:
-
-```bash
-export AWS_ACCESS_KEY_ID="EXAMPLE_ACCESS_KEY"
-export AWS_SECRET_ACCESS_KEY="EXAMPLE_SECRET_KEY"
-export AWS_SESSION_TOKEN="EXAMPLE_SESSION_TOKEN"
-```
-
-Only set credentials that you are authorized to use, and avoid placing real secrets in shell history or public scripts.
-
-## Configuration Precedence
-
-AWS CLI settings can come from command-line options, environment variables, configuration files, and other credential providers.
-
-For example, an explicitly supplied `--region` option overrides the configured default region for that command.
-
-Credential selection and non-credential configuration have separate precedence rules, so the effective settings should be verified when troubleshooting authentication problems.
-
-**Key takeaway:** Profiles help separate AWS environments, while environment variables provide an alternative way to configure command execution.
-
----
-
-# AWS CLI Command Structure
-
-AWS CLI commands follow a consistent structure:
-
-```bash
-aws <service> <operation> [options]
-```
-
-The components are:
-
-* **Service:** The AWS service being accessed, such as `ec2`, `s3`, or `iam`.
-* **Operation:** The action to perform, such as `describe-regions` or `list-groups`.
-* **Options:** Additional parameters controlling the command's behavior.
-
-Common options include:
-
-| Option | Purpose |
-|---|---|
-| `--region` | Selects the AWS region |
-| `--profile` | Selects a named profile |
-| `--output` | Specifies the output format |
-| `--query` | Filters results using JMESPath |
-
-## Listing AWS Regions
-
-The following command retrieves the available AWS regions:
-
-```bash
-aws ec2 describe-regions \
-  --query "Regions[].RegionName" \
-  --output text
-```
-
-This is useful for understanding the geographical scope of AWS resources and selecting the appropriate region for further operations.
-
-## Exploring EC2 Commands
-
-The first available EC2 command identified in the exercise is:
-
-```text
-accept-address-transfer
-```
-
-To inspect available EC2 operations in your own CLI installation, use:
-
-```bash
-aws ec2 help
-```
-
-Command availability and ordering can vary by AWS CLI version.
-
----
-
-# IAM Enumeration
-
-AWS Identity and Access Management (IAM) controls access to AWS resources through users, groups, roles, and policies.
-
-During the exercise, the following command is used to list IAM groups:
-
-```bash
-aws iam list-groups
-```
-
-Example output:
-
-```json
 {
     "Groups": [
         {
             "Path": "/",
             "GroupName": "AWS101",
-            "Arn": "arn:aws:iam::123456789012:group/AWS101"
+            "GroupId": "AGPAR6DQWN2TU2A5SAY2L",
+            "Arn": "arn:aws:iam::158878467779:group/AWS101",
+            "CreateDate": "2026-01-16T08:13:05+00:00"
         },
         {
             "Path": "/",
             "GroupName": "LabReadOnly",
-            "Arn": "arn:aws:iam::123456789012:group/LabReadOnly"
+            "GroupId": "AGPAR6DQWN2T6LVLY6F6K",
+            "Arn": "arn:aws:iam::158878467779:group/LabReadOnly",
+            "CreateDate": "2026-01-14T09:46:57+00:00"
         }
     ]
 }
 ```
 
-The example illustrates how AWS CLI returns structured information about IAM groups.
+**Answer the questions below**
 
-Group names and identifiers depend on the lab environment.
+> What is the first available command for the EC2 service?
+> 
 
-## Security Relevance
+accept-address-transfer
 
-IAM enumeration can help an authorized security analyst understand:
+> When you run the aws s3 ls command, what is the prefix of the S3 bucket that includes the current account ID?
+> 
 
-* Which groups exist in an account.
-* How users and roles are organized.
-* Whether permissions follow least-privilege principles.
-* Whether excessive permissions or risky trust relationships require further review.
+firststeps
 
-Listing groups alone does not reveal all effective permissions. A proper assessment also requires examining attached and inline policies, group memberships, role trust policies, and applicable permission boundaries.
-
-**Key takeaway:** IAM visibility is fundamental to cloud security because excessive permissions can increase the impact of compromised credentials.
-
----
-
-# S3 Bucket Enumeration
-
-Amazon Simple Storage Service (S3) is an object storage service commonly used for files, application data, backups, logs, and static website content.
-
-The following command lists the S3 buckets accessible to the current identity:
-
-```bash
-aws s3 ls
-```
-
-Example output from the exercise:
-
-```text
+```jsx
+root@ip-10-112-92-17:~# aws s3 ls
 2026-10-08 02:20:44 firststeps-325107200175
 ```
 
-The bucket name follows this pattern:
+### Task 7 - Conclusion
 
-```text
-firststeps-<ACCOUNT_ID>
-```
+You should now know how to:
 
-The prefix identified in the exercise is:
-
-```text
-firststeps
-```
-
-This illustrates how resource names can contain recognizable prefixes and account-specific identifiers.
-
-However, bucket naming conventions do not establish whether a bucket is public or insecure. Access permissions and bucket configuration must be assessed separately.
-
-**Key takeaway:** S3 enumeration helps identify accessible storage resources and provides a starting point for authorized reviews of bucket policies, public access settings, and data exposure risks.
-
----
-
-# Practical AWS Command Reference
-
-The following commands summarize the core techniques covered in this room.
-
-| Objective | Command |
-|---|---|
-| Check AWS CLI version | `aws --version` |
-| Identify the active caller | `aws sts get-caller-identity` |
-| Inspect CLI configuration | `aws configure list` |
-| Configure the default profile | `aws configure` |
-| Check the default region | `echo $AWS_DEFAULT_REGION` |
-| List AWS regions | `aws ec2 describe-regions` |
-| List IAM groups | `aws iam list-groups` |
-| List accessible S3 buckets | `aws s3 ls` |
-| Use a named profile | `aws sts get-caller-identity --profile thm-user` |
-| View EC2 command help | `aws ec2 help` |
-
----
-
-# Attack and Investigation Flow
-
-Although this room focuses on cloud fundamentals rather than exploitation, the workflow resembles the initial stages of an authorized cloud security assessment.
-
-```text
-Provision AWS Lab Environment
-            |
-            v
-Access AWS Management Console
-            |
-            v
-Verify Account and Region
-            |
-            v
-Open AWS CloudShell
-            |
-            v
-Identify Current AWS Identity
-            |
-            v
-Inspect CLI Configuration
-            |
-            v
-Understand Profiles and Credentials
-            |
-            v
-Explore AWS CLI Commands
-            |
-            v
-Enumerate IAM Groups
-            |
-            v
-List Accessible S3 Buckets
-            |
-            v
-Review Cloud Security Implications
-```
-
----
-
-# Security Considerations
-
-The exercises highlight several important considerations when working with AWS environments.
-
-* **Identity verification:** Confirm the active account and caller before executing commands.
-* **Credential protection:** Never expose access keys or session tokens in source control.
-* **Least privilege:** Grant only the permissions required for each task.
-* **Regional awareness:** Check the selected region before querying or modifying resources.
-* **IAM review:** Investigate excessive permissions and risky access relationships.
-* **S3 security:** Review bucket policies, public access settings, and data access controls.
-* **Auditability:** Use appropriate AWS logging and monitoring services to track relevant activity.
-
-These practices are particularly important for SOC analysts and cloud security engineers who monitor suspicious activity, investigate compromised identities, and assess cloud misconfigurations.
-
----
-
-# Lessons Learned
-
-This room establishes a foundation for working with AWS through both the Management Console and the command line. Using `aws sts get-caller-identity` provides a quick way to confirm the active identity and account, while `aws configure list` helps identify the effective CLI configuration.
-
-The exercises also demonstrate how AWS CLI profiles, regions, and output filtering support efficient cloud administration. Basic IAM and S3 enumeration provides useful context for understanding cloud permissions and accessible resources.
-
-From a security perspective, the most important lessons are to verify identity before performing operations, protect credentials, apply least privilege, and understand which cloud resources are accessible to a given identity. These fundamentals provide a starting point for more advanced AWS security assessments, cloud threat hunting, and incident response.
-
----
-
-# Skills and Technologies
-
-**Cloud Platform:** Amazon Web Services (AWS)  
-**Command-Line Tools:** AWS CLI, AWS CloudShell  
-**Identity and Access:** AWS STS, IAM  
-**Cloud Services:** EC2, S3  
-**Configuration:** AWS profiles, environment variables, regions  
-**Security Concepts:** Identity verification, least privilege, credential security, cloud resource enumeration
-
----
-
-# Challenge Answers
-
-| Question | Answer |
-|---|---|
-| What is the account name? | `LabRoom` |
-| What is the default lab region? | `us-east-1` |
-| What fields does `aws sts get-caller-identity` return? | `UserId`, `Account`, `Arn` |
-| What is the first available EC2 command in the exercise? | `accept-address-transfer` |
-| What is the S3 bucket prefix? | `firststeps` |
-
----
-
-**Learning Platform:** [TryHackMe](https://tryhackme.com/)  
-**Focus:** AWS fundamentals, cloud administration, and foundational cloud security skills.
+- Start/Reset/Terminate the TryHackMe AWS environment.
+- Navigate the AWS Console.
+- Use CloudShell and AWS CLI .
+- Configure AWS CLI.
+- Run basic AWS CLI commands.

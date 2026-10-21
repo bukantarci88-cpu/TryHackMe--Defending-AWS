@@ -1,4 +1,4 @@
-# AWS 1.6. Introduction to Cloud Storage
+# AWS Security 1.6. Introduction to Cloud Storage
 
 ### Task 1 - Introduction
 

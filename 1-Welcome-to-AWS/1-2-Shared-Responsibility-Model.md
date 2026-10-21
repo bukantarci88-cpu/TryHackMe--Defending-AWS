@@ -1,4 +1,4 @@
-# AWS 1.2. Shared Responsibility Model
+# AWS Security 1.2. Shared Responsibility Model
 
 ### Task 1 - Introduction
 

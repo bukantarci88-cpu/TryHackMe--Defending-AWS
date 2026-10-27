@@ -60,9 +60,7 @@ Terraform state files
 
 In this task, you will take on the role of a security analyst reviewing the network configuration of a two-tier VPC. The environment has a public subnet with a web server and a private subnet with a backend application. Security groups are already in place. Your job is to determine whether the NACLs are providing any additional defense.
 
-**Info:** To start the AWS environment, click the `Cloud Details` button at the top of the room, then click `Generate Environment`. When the environment is ready, use the Credentials tab to navigate to the AWS Console and log in.
-
-Make sure you first connect to the lab environment, either via `CloudShell` or by configuring the AWS CLI. Save the VPC and instance IDs to environment variables.
+Save the VPC and instance IDs to environment variables.
 
 ```bash
 $ VPC_ID=$(aws ec2 describe-vpcs \
@@ -165,8 +163,6 @@ sh-5.2$ cat /opt/flags/identification-flag.txt
 
 **Findings Summary**
 
-Here is what you found:
-
 - Both subnets - `room33-public-subnet` and `room33-private-subnet` - are associated with the single default NACL.
 - The default NACL has one rule (100) that allows all traffic from `0.0.0.0/0` in both inbound and outbound directions. The implicit deny rule is never reached.
 - Security groups on the instances are correctly scoped, but they operate at the instance level only. A misconfigured security group rule or an attacker moving laterally within the VPC would face zero resistance at the subnet boundary.
@@ -199,11 +195,7 @@ Now that you have identified the problem, here is the structured approach to fix
 4. Associate the new private NACL with the private subnet.
 5. Verify that the web server remains reachable, and that both subnets now use custom NACLs.
 
-**Note:** If you are starting a new `CloudShell` session, rerun the environment variable setup from Task 3 before proceeding.
-
-**Create a Custom NACL for the Public Subnet**
-
-The public subnet runs the web server. It needs to accept inbound HTTP from the internet and communicate with the private subnet on port 8080. Make sure you exit the SSM session with `exit` or open a new CloudShell tab and re-run the environmental variable setup from Task 3.
+**Create a Custom NACL for the Public Subnet:** The public subnet runs the web server. It needs to accept inbound HTTP from the internet and communicate with the private subnet on port 8080. 
 
 ```bash
 $ PUBLIC_NACL_ID=$(aws ec2 create-network-acl \
@@ -252,9 +244,7 @@ $ aws ec2 create-network-acl-entry --network-acl-id $PUBLIC_NACL_ID \
   --cidr-block 0.0.0.0/0 --rule-action allow --egress
 ```
 
-**Associate the Public NACL**
-
-Replace the default NACL association on the public subnet.
+**Associate the Public NACL:** Replace the default NACL association on the public subnet.
 
 ```bash
 $ PUB_SUBNET_ID=$(aws ec2 describe-subnets \
@@ -275,9 +265,7 @@ $ aws ec2 replace-network-acl-association \
 }
 ```
 
-**Create a Custom NACL for the Private Subnet**
-
-The private subnet runs the backend application. It should accept traffic only from the public subnet on port 8080; never directly from the internet.
+**Create a Custom NACL for the Private Subnet:** The private subnet runs the backend application. It should accept traffic only from the public subnet on port 8080; never directly from the internet.
 
 ```bash
 $ PRIVATE_NACL_ID=$(aws ec2 create-network-acl \
@@ -314,9 +302,7 @@ $ aws ec2 create-network-acl-entry --network-acl-id $PRIVATE_NACL_ID \
   --cidr-block 10.0.0.0/16 --rule-action allow --egress
 ```
 
-**Associate the Private NACL**
-
-Replace the default NACL associated with the private subnet.
+**Associate the Private NACL:** Replace the default NACL associated with the private subnet.
 
 ```bash
 $ PRIV_SUBNET_ID=$(aws ec2 describe-subnets \
@@ -337,9 +323,7 @@ $ aws ec2 replace-network-acl-association \
 }
 ```
 
-**Verify**
-
-Confirm the web server is still reachable on HTTP:
+**Verify:** Confirm the web server is still reachable on HTTP:
 
 ```bash
 $ WEB_IP=$(aws ec2 describe-instances \
@@ -414,9 +398,7 @@ Great job. Now, let us see how to build NACL defenses correctly from the start. 
 3. What outbound internet access do private resources need? If private instances must access external APIs, route them through a NAT Gateway, not directly through an Internet Gateway. Restrict private subnet outbound NACLs to VPC-internal CIDRs unless a NAT Gateway is present.
 4. What should each subnet be completely blocked from doing? The private subnet must never accept inbound traffic from `0.0.0.0/0`. The public subnet should deny traffic on any port not required by the application.
 
-**Create the VPC and Internet Gateway**
-
-Create a new VPC and ensure DNS support is enabled and add an internet gateway for the public subnet.
+**Create the VPC and Internet Gateway:** Create a new VPC and ensure DNS support is enabled and add an internet gateway for the public subnet.
 
 ```bash
 $ SECURE_VPC=$(aws ec2 create-vpc \
@@ -440,9 +422,7 @@ $ echo "Secure VPC: $SECURE_VPC | IGW: $SECURE_IGW"
 Secure VPC: vpc-09d1468c12aeb617f | IGW: igw-0fcc23cc2d19b936e
 ```
 
-**Create the Subnets**
-
-Create the public and private subnets.
+**Create the Subnets:** Create the public and private subnets.
 
 ```bash
 $ AZ=$(aws ec2 describe-availability-zones \
@@ -463,9 +443,7 @@ $ echo "Public: $SECURE_PUBLIC | Private: $SECURE_PRIVATE"
 Public: subnet-057c63a2131589a9a | Private: subnet-02138b34aaf05297d
 ```
 
-**Create Route Tables**
-
-Associate the public subnet with an IGW route and the private subnet with a local-only route table.
+**Create Route Tables:** Associate the public subnet with an IGW route and the private subnet with a local-only route table.
 
 ```bash
 $ PUB_RT=$(aws ec2 create-route-table \
@@ -504,9 +482,7 @@ $ aws ec2 associate-route-table --route-table-id $PRIV_RT --subnet-id $SECURE_PR
 Public RT: rtb-0aca3cf8de639c036 | Private RT: rtb-00f7395686aa024cb
 ```
 
-**Create the Public Subnet NACL**
-
-Create the NACL first.
+**Create the Public Subnet NACL:** Create the NACL first.
 
 ```bash
 $ PUB_NACL=$(aws ec2 create-network-acl \
@@ -571,9 +547,7 @@ $ aws ec2 replace-network-acl-association \
 }
 ```
 
-**Create the Private Subnet NACL**
-
-Create the NACL first.
+**Create the Private Subnet NACL:** Create the NACL first.
 
 ```bash
 $ PRIV_NACL=$(aws ec2 create-network-acl \
@@ -630,9 +604,7 @@ $ aws ec2 replace-network-acl-association \
 
 **Note:** The private NACL has no `0.0.0.0/0` inbound rule. The implicit `*` rule denies any traffic arriving from outside the VPC CIDR. This is intentional; the private subnet must never be directly reachable from the internet.
 
-**Verify**
-
-Compare both NACL configurations to confirm they are correctly scoped:
+**Verify:** Compare both NACL configurations to confirm they are correctly scoped:
 
 ```bash
 $ echo "=== Public NACL Inbound ===" && \

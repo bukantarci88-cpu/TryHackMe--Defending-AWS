@@ -1,4 +1,4 @@
-# AWS Security 4.2. The Leaky Metadata
+# AWS Security 4.3. The Leaky Metadata
 
 ### Task 1 - Introduction
 

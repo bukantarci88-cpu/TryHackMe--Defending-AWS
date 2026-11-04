@@ -295,7 +295,7 @@ If everything was done correctly, you will see the flag in the output.
 
 kms:Decrypt
 
-![image.png](AWS%20Security%205%202%20The%20Plain%20Bucket/image.png)
+<img width="887" height="82" alt="image" src="https://github.com/user-attachments/assets/51c44267-32af-41d3-9bf0-fe9e528b1c85" />
 
 > What is the flag found after remediating the misconfiguration?
 > 
